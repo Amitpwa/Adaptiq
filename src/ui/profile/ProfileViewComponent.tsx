@@ -13,7 +13,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import KeyIcon from '@mui/icons-material/VpnKey';
-import DeleteIcon from '@mui/icons-material/DeleteOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -42,9 +42,11 @@ export interface ProfileData {
   credentials: Array<{
     id: string;
     provider: string;
-    model: string;
-    baseUrl: string | null;
-    lastTestedAt: string;
+    model: string | null;
+    keyHint: string;
+    status: string;
+    lastVerifiedAt: string | null;
+    lastError: string | null;
     createdAt: string;
   }>;
 }
@@ -247,7 +249,7 @@ export function ProfileViewComponent({ initialData }: { initialData?: ProfileDat
                           <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                             <CheckCircleIcon sx={{ color: tokens.color.googleGreen, fontSize: 18 }} />
                             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-                              {cred.provider} · {cred.model}
+                              {cred.provider} · {cred.model ?? 'Default'} (•••• {cred.keyHint})
                             </Typography>
                           </Stack>
                           <Typography variant="caption" sx={{ color: 'text.secondary' }}>

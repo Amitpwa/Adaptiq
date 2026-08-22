@@ -5,7 +5,7 @@ import { encryptSecret } from '@/lib/crypto';
 import { requireUser } from '@/auth/session';
 import { ok, withApi } from '@/lib/api-handler';
 import { addCredentialSchema, updateProfileSchema } from '@/validation/profile';
-import { resolveLlm } from '@/ai/resolve';
+import { resolveLlmForUser } from '@/ai/resolve';
 
 export const GET = withApi(async () => {
   const user = await requireUser();
@@ -17,21 +17,22 @@ export const GET = withApi(async () => {
     },
   });
 
-  const credentials = await prisma.learnerLlmCredential.findMany({
+  const credentials = await prisma.llmCredential.findMany({
     where: { userId: user.id },
     select: {
       id: true,
       provider: true,
       model: true,
-      baseUrl: true,
-      lastTestedAt: true,
+      keyHint: true,
+      status: true,
+      lastVerifiedAt: true,
       lastError: true,
       createdAt: true,
     },
     orderBy: { createdAt: 'desc' },
   });
 
-  const activeLlm = await resolveLlm(user.id);
+  const activeLlm = await resolveLlmForUser(user.id);
 
   return ok({
     user: {
@@ -81,21 +82,24 @@ export const POST = withApi(async (request: Request) => {
   const body = await request.json();
   const input = addCredentialSchema.parse(body);
 
-  const encryptedKey = encryptSecret(input.apiKey);
+  const ciphertext = encryptSecret(input.apiKey);
+  const keyHint = input.apiKey.slice(-4);
 
-  const cred = await prisma.learnerLlmCredential.create({
+  const cred = await prisma.llmCredential.create({
     data: {
       userId: user.id,
-      provider: input.provider,
-      encryptedKey,
-      baseUrl: input.baseUrl,
+      provider: input.provider === 'OPENAI' || input.provider === 'OPENAI_COMPATIBLE' || input.provider === 'OLLAMA' ? 'OPENAI' : 'ANTHROPIC',
+      ciphertext,
+      keyHint,
       model: input.model,
-      lastTestedAt: new Date(),
+      status: 'VERIFIED',
+      lastVerifiedAt: new Date(),
     },
     select: {
       id: true,
       provider: true,
       model: true,
+      keyHint: true,
       createdAt: true,
     },
   });

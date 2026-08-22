@@ -6,7 +6,7 @@ export const DELETE = withApi(async (_request: Request, context: { params: Promi
   const user = await requireUser();
   const { id } = await context.params;
 
-  await prisma.learnerLlmCredential.deleteMany({
+  await prisma.llmCredential.deleteMany({
     where: { id, userId: user.id },
   });
 
