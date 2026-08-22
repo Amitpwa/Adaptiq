@@ -8,6 +8,7 @@ export default defineConfig({
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       '@/app': fileURLToPath(new URL('./app', import.meta.url)),
+      'server-only': fileURLToPath(new URL('./tests/shims/server-only.ts', import.meta.url)),
     },
   },
   test: {

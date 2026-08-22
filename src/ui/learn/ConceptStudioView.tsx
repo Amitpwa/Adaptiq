@@ -320,9 +320,15 @@ export function ConceptStudioView({
                             Hint {h.hintLevel} of 4: {h.hintLevel === 1 ? 'Guiding Question' : h.hintLevel === 2 ? 'Key Concept' : h.hintLevel === 3 ? 'Similar Example' : 'Walkthrough'}
                           </Typography>
                           <Chip
-                            label="AI Tutor"
+                            label={h.attribution ?? (h.source === 'AI' ? 'Socratic AI' : 'Deterministic Ladder')}
                             size="small"
-                            sx={{ fontSize: '0.65rem', height: 20 }}
+                            sx={{
+                              fontSize: '0.7rem',
+                              height: 22,
+                              bgcolor: h.source === 'AI' ? tokens.color.primaryLight : tokens.color.lockedFill,
+                              color: h.source === 'AI' ? tokens.color.googleBlue : 'text.secondary',
+                              fontWeight: 700,
+                            }}
                           />
                         </Stack>
                         <Typography variant="body2" sx={{ color: 'text.primary' }}>

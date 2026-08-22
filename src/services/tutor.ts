@@ -8,6 +8,7 @@ export interface SocraticHintResponse {
   hintLevel: number;
   body: string;
   source: 'AI' | 'FALLBACK';
+  attribution?: string;
   isFinalLevel: boolean;
 }
 
@@ -66,6 +67,7 @@ export async function getNextSocraticHint(
           hintLevel: targetLevel,
           body: response.content.trim(),
           source: 'AI',
+          attribution: resolved.attribution,
           isFinalLevel: targetLevel >= 4,
         };
       }
@@ -78,6 +80,7 @@ export async function getNextSocraticHint(
     hintLevel: targetLevel,
     body: fallbackBody,
     source: 'FALLBACK',
+    attribution: 'Curated Scaffolding',
     isFinalLevel: targetLevel >= 4,
   };
 }
