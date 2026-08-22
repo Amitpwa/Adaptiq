@@ -1,7 +1,6 @@
 import 'server-only';
 
 import { prisma } from '@/lib/db';
-import { NotFoundError } from '@/lib/errors';
 import { loadGoalCurriculum } from '@/repositories/curriculum';
 import { loadDecayedStates } from './knowledge-state';
 
@@ -35,15 +34,17 @@ export interface DashboardSummary {
   openMisconceptions: number;
 }
 
-export async function getDashboardSummary(userId: string): Promise<DashboardSummary> {
+export async function getDashboardSummary(userId: string): Promise<DashboardSummary | null> {
   const profile = await prisma.learnerProfile.findUnique({
     where: { userId },
     select: { activeGoal: { select: { slug: true } } },
   });
 
-  const goalSlug = profile?.activeGoal?.slug;
+  let goalSlug = profile?.activeGoal?.slug;
+
+  // If new user has not completed onboarding/diagnostic yet, return null
   if (!goalSlug) {
-    throw NotFoundError('You have not chosen a learning goal yet.');
+    return null;
   }
 
   const curriculum = await loadGoalCurriculum(goalSlug);
@@ -68,13 +69,24 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
   // Counted in SQL rather than pulled into memory: these are aggregate
   // questions and the database answers them without shipping rows.
   const [dueForReview, openMisconceptions] = await Promise.all([
-    prisma.reviewSchedule.count({ where: { userId, dueAt: { lte: new Date() } } }),
-    prisma.learnerMisconception.count({ where: { userId, resolvedAt: null } }),
+    prisma.reviewSchedule.count({
+      where: {
+        userId,
+        dueAt: { lte: new Date() },
+        conceptId: { in: conceptIds },
+      },
+    }),
+    prisma.learnerMisconception.count({
+      where: {
+        userId,
+        resolvedAt: null,
+      },
+    }),
   ]);
 
   return {
-    goalSlug: curriculum.goalSlug,
-    goalTitle: curriculum.goalTitle,
+    goalSlug: curriculum.goal.slug,
+    goalTitle: curriculum.goal.title,
     totalConcepts: conceptIds.length,
     masteredCount: counts.MASTERED,
     fragileCount: counts.FRAGILE,
