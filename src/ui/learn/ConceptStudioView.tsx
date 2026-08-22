@@ -106,7 +106,7 @@ export function ConceptStudioView({
             Concept Not Found
           </Typography>
           <Button variant="contained" component={Link} href="/dashboard" onClick={() => soundFx.playClick()}>
-            Back to Dashboard
+            Back to Knowledge Map
           </Button>
         </Paper>
       </Container>
@@ -146,10 +146,10 @@ export function ConceptStudioView({
               <Stack spacing={1} sx={{ maxWidth: 640 }}>
                 <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                   <Typography variant="caption" sx={{ color: tokens.color.googleBlue, fontWeight: 800, textTransform: 'uppercase' }}>
-                    Concept
+                    Interactive
                   </Typography>
-                  <Typography variant="caption" sx={{ color: tokens.color.googleRed, fontWeight: 800, textTransform: 'uppercase' }}>
-                    Studio
+                  <Typography variant="caption" sx={{ color: tokens.color.googleGreen, fontWeight: 800, textTransform: 'uppercase' }}>
+                    Lesson
                   </Typography>
                 </Stack>
                 <Typography variant="h1" sx={{ fontSize: { xs: '1.8rem', md: '2.4rem' } }}>
@@ -169,7 +169,7 @@ export function ConceptStudioView({
           <Paper sx={{ p: { xs: 3, md: 4 }, borderRadius: tokens.radius.lg, border: 1, borderColor: 'divider' }}>
             <Stack spacing={3}>
               <Stack direction={{ xs: 'column', sm: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { sm: 'center' }, gap: 2 }}>
-                <Typography variant="h3">Explanatory Lenses (PRD FR-3.1)</Typography>
+                <Typography variant="h3">Choose Your Learning Style</Typography>
                 <Tabs
                   value={lens}
                   onChange={(_, v) => {
@@ -197,8 +197,8 @@ export function ConceptStudioView({
                   }}
                 >
                   <Tab value="ANALOGY" label="Analogy" />
-                  <Tab value="FIRST_PRINCIPLES" label="First Principles" />
-                  <Tab value="CODE" label="Code-First" />
+                  <Tab value="FIRST_PRINCIPLES" label="Deep Dive" />
+                  <Tab value="CODE" label="Code Example" />
                   <Tab value="VISUAL" label="Visual Diagram" />
                 </Tabs>
               </Stack>
@@ -222,18 +222,18 @@ export function ConceptStudioView({
               </Box>
 
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                Attribution: {concept.attribution} · Grounded in validated curriculum models.
+                Lesson Material · Verified curriculum explanation.
               </Typography>
             </Stack>
           </Paper>
 
-          {/* In-Flow Formative Micro-Assessment Probe */}
+          {/* Quick Check Practice Question */}
           {currentQuestion ? (
             <Paper sx={{ p: { xs: 3, md: 4 }, borderRadius: tokens.radius.lg, border: 1, borderColor: 'divider' }}>
               <Stack spacing={3}>
                 <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                   <Chip
-                    label="In-Flow Retrieval Probe (FR-4.1)"
+                    label="Quick Practice Check"
                     size="small"
                     sx={{ bgcolor: tokens.color.primaryLight, color: tokens.color.googleBlue, fontWeight: 700 }}
                   />
@@ -245,10 +245,10 @@ export function ConceptStudioView({
                     sx={{ color: tokens.color.googleYellow, borderColor: tokens.color.googleYellow }}
                   >
                     {hintMutation.isPending
-                      ? 'Requesting Hint…'
+                      ? 'Loading hint…'
                       : hintLevel === 0
-                        ? 'Need a Socratic Hint? (Level 1)'
-                        : `Escalate Hint (${hintLevel}/4)`}
+                        ? 'Need a Hint? (Step 1)'
+                        : `Get Next Hint (${hintLevel}/4)`}
                   </Button>
                 </Stack>
 
@@ -298,11 +298,11 @@ export function ConceptStudioView({
                   />
                 )}
 
-                {/* Socratic Hint Ladder Stream */}
+                {/* Step-by-Step Guided Hints */}
                 {hints.length > 0 && (
                   <Stack spacing={1.5}>
                     <Typography variant="caption" sx={{ fontWeight: 700, color: tokens.color.primaryDark, textTransform: 'uppercase' }}>
-                      Socratic Scaffolding Ladder (FR-5.2)
+                      Guided Hints
                     </Typography>
                     {hints.map((h, index) => (
                       <Box
@@ -317,10 +317,10 @@ export function ConceptStudioView({
                       >
                         <Stack direction="row" sx={{ justifyContent: 'space-between', mb: 0.5 }}>
                           <Typography variant="subtitle2" sx={{ fontWeight: 700, color: tokens.color.primaryDark }}>
-                            Level {h.hintLevel} Hint {h.hintLevel === 1 ? '(Clarification)' : h.hintLevel === 2 ? '(Conceptual)' : h.hintLevel === 3 ? '(Isomorphic)' : '(Walkthrough)'}
+                            Hint {h.hintLevel} of 4: {h.hintLevel === 1 ? 'Guiding Question' : h.hintLevel === 2 ? 'Key Concept' : h.hintLevel === 3 ? 'Similar Example' : 'Walkthrough'}
                           </Typography>
                           <Chip
-                            label={h.source === 'AI' ? 'Socratic AI' : 'Deterministic Ladder'}
+                            label="AI Tutor"
                             size="small"
                             sx={{ fontSize: '0.65rem', height: 20 }}
                           />
@@ -345,7 +345,7 @@ export function ConceptStudioView({
                     }}
                   >
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, color: probeResult.correct ? tokens.color.googleGreen : tokens.color.googleRed }}>
-                      {probeResult.correct ? '✓ Verified Mastery! Bayesian Posterior Updated.' : '⚠ Foundational Misconception Identified.'}
+                      {probeResult.correct ? '✓ Great job! You have mastered this concept.' : '⚠ Let’s review this concept together.'}
                     </Typography>
                     {probeResult.explanation && (
                       <Typography variant="body2" sx={{ mt: 0.5, color: 'text.primary' }}>
@@ -374,7 +374,7 @@ export function ConceptStudioView({
                         '&:hover': { bgcolor: tokens.color.primaryDark },
                       }}
                     >
-                      {probeMutation.isPending ? 'Grading & Updating BKT…' : 'Submit & Update Knowledge'}
+                      {probeMutation.isPending ? 'Checking answer…' : 'Submit Answer'}
                     </Button>
                   ) : (
                     <Button
@@ -384,7 +384,7 @@ export function ConceptStudioView({
                       onClick={() => soundFx.playClick()}
                       sx={{ px: 4, py: 1.25 }}
                     >
-                      Return to Map →
+                      Return to Knowledge Map →
                     </Button>
                   )}
                 </Stack>
@@ -393,10 +393,10 @@ export function ConceptStudioView({
           ) : (
             <Paper sx={{ p: 4, borderRadius: tokens.radius.lg, border: 1, borderColor: 'divider', textAlign: 'center' }}>
               <Typography variant="h3" sx={{ mb: 1 }}>
-                Reading & Synthesis Phase
+                Lesson Complete
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-                Review the multi-lens explanation above. When ready, continue along your topological path.
+                Review the lesson above. When you are ready, continue to your next topic.
               </Typography>
               <Button variant="contained" component={Link} href="/dashboard" onClick={() => soundFx.playClick()}>
                 Return to Knowledge Map →

@@ -48,7 +48,7 @@ export function ReviewQueueComponent({
                 ← Return to Knowledge Map
               </Button>
               <Chip
-                label={`${items?.length ?? 0} Probes Due`}
+                label={`${items?.length ?? 0} Reviews Ready`}
                 size="small"
                 sx={{
                   bgcolor: (items?.length ?? 0) > 0 ? tokens.color.fragileFill : tokens.color.masteredFill,
@@ -60,18 +60,18 @@ export function ReviewQueueComponent({
 
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <Typography variant="caption" sx={{ color: tokens.color.googleBlue, fontWeight: 800, textTransform: 'uppercase' }}>
-                Ebbinghaus
+                Smart
               </Typography>
               <Typography variant="caption" sx={{ color: tokens.color.googleYellow, fontWeight: 800, textTransform: 'uppercase' }}>
-                Memory Retention
+                Memory Refresh
               </Typography>
             </Stack>
 
             <Typography variant="h1" sx={{ fontSize: { xs: '2rem', md: '2.5rem' } }}>
-              Spaced Retrieval Queue (PRD FR-2.2)
+              Quick Review Queue
             </Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 720 }}>
-              Concepts decay over time on the Ebbinghaus forgetting curve R(t) = e^(-t/S). When retrievability falls below 0.70, Adaptiq schedules a targeted 2-minute micro-probe before long-term memory is lost.
+              To help you remember what you learn long-term, Adaptiq schedules quick 2-minute refreshers right before key concepts start fading from memory.
             </Typography>
           </Stack>
 
@@ -95,10 +95,10 @@ export function ReviewQueueComponent({
                 ✓
               </Box>
               <Typography variant="h3" sx={{ mb: 1 }}>
-                All Concepts Retained!
+                All Topics Fresh in Memory!
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-                Your memory retrievability scores are currently above the 0.70 retention threshold.
+                You have no reviews due right now. Keep exploring new topics on your map!
               </Typography>
               <Button
                 variant="contained"
@@ -143,7 +143,7 @@ export function ReviewQueueComponent({
                   <Stack spacing={1.5}>
                     <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                       <Typography variant="caption" sx={{ color: tokens.color.fragile, fontWeight: 700 }}>
-                        Retrievability: {Math.round(item.retrievability * 100)}%
+                        Memory Strength: {Math.round(item.retrievability * 100)}%
                       </Typography>
                       <Chip label={`~${item.estimatedMinutes} min`} size="small" />
                     </Stack>
@@ -167,7 +167,7 @@ export function ReviewQueueComponent({
                       '&:hover': { bgcolor: tokens.color.primaryDark },
                     }}
                   >
-                    Take Retrieval Probe →
+                    Start Quick Review →
                   </Button>
                 </Card>
               ))}

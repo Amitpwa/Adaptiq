@@ -98,7 +98,7 @@ export function DiagnosticRunner({
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8, gap: 2 }}>
         <CircularProgress size={36} />
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Calibrating next adaptive question (2PL IRT Fisher Information)...
+          Finding the best next question for your level...
         </Typography>
       </Box>
     );
@@ -108,7 +108,7 @@ export function DiagnosticRunner({
     return (
       <Card sx={{ p: 4, textAlign: 'center', borderRadius: tokens.radius.lg }}>
         <Typography variant="h3" sx={{ mb: 1.5 }}>
-          Diagnostic Calibration Error
+          Unable to Load Question
         </Typography>
         <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
           Could not fetch the next question. Please try reloading.
@@ -140,11 +140,10 @@ export function DiagnosticRunner({
             ✓
           </Box>
           <Typography variant="h2" sx={{ fontSize: '1.75rem' }}>
-            Diagnostic Complete!
+            Skill Check Complete!
           </Typography>
           <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            Your baseline ability estimate has been calibrated (θ = {itemData.progress?.theta?.toFixed(2) ?? '0.00'}).
-            We have generated your personalized topological learning path and knowledge map.
+            We have mapped your starting knowledge and built your custom step-by-step learning path.
           </Typography>
           <Button
             variant="contained"
@@ -158,7 +157,7 @@ export function DiagnosticRunner({
               '&:hover': { bgcolor: tokens.color.primaryDark },
             }}
           >
-            {completeMutation.isPending ? 'Generating Learning Path…' : 'Enter Dashboard →'}
+            {completeMutation.isPending ? 'Opening Your Dashboard…' : 'Enter Dashboard →'}
           </Button>
         </Stack>
       </Card>
@@ -189,7 +188,7 @@ export function DiagnosticRunner({
           sx={{ bgcolor: tokens.color.primaryLight, color: tokens.color.googleBlue, fontWeight: 700 }}
         />
         <Chip
-          label={`Concept: ${q.conceptTitle}`}
+          label={`Topic: ${q.conceptTitle}`}
           variant="outlined"
           size="small"
           sx={{ borderColor: tokens.color.border, color: tokens.color.textSecondary }}
@@ -259,7 +258,7 @@ export function DiagnosticRunner({
               }}
             >
               <Typography variant="subtitle2" sx={{ fontWeight: 700, color: feedback.correct ? tokens.color.googleGreen : tokens.color.googleRed }}>
-                {feedback.correct ? '✓ Correct Answer' : 'Incorrect — Recording Concept Boundary'}
+                {feedback.correct ? '✓ Correct Answer' : 'Incorrect — Recording where to start your lessons'}
               </Typography>
               {feedback.explanation && (
                 <Typography variant="body2" sx={{ mt: 0.5, color: 'text.primary' }}>
@@ -288,7 +287,7 @@ export function DiagnosticRunner({
                   '&:hover': { bgcolor: tokens.color.primaryDark },
                 }}
               >
-                {answerMutation.isPending ? 'Grading Response…' : 'Submit Answer'}
+                {answerMutation.isPending ? 'Checking answer…' : 'Submit Answer'}
               </Button>
             ) : (
               <Button

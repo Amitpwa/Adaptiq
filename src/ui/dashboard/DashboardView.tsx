@@ -19,9 +19,10 @@ import { KnowledgeGraph } from '@/ui/graph/KnowledgeGraph';
 import { KnowledgeTable } from '@/ui/graph/KnowledgeTable';
 import { MasteryDots } from '@/ui/graphics/MasteryDots';
 import { tokens, masteryPalette } from '@/ui/tokens';
+import { soundFx } from '@/ui/audio/sound';
 import type { DashboardSummary } from '@/services/dashboard';
-import type { KnowledgeGraphData, GraphNodeView } from '@/services/graph';
 import type { RecommendationView } from '@/services/recommendation';
+import type { GraphNodeView, KnowledgeGraphData } from '@/services/graph';
 
 export function DashboardView({
   initialSummary,
@@ -35,10 +36,11 @@ export function DashboardView({
   const [viewMode, setViewMode] = useState<'graph' | 'table'>('graph');
   const [selectedNode, setSelectedNode] = useState<GraphNodeView | null>(null);
 
-  // 1. Dashboard metrics (always re-fetch on focus to reflect new answers immediately)
+  // 1. Live dashboard summary with initialData & focus refetch
   const { data: summary = initialSummary } = useQuery<DashboardSummary>({
     queryKey: ['dashboard-summary'],
     initialData: initialSummary,
+    staleTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     queryFn: async () => {
@@ -49,10 +51,11 @@ export function DashboardView({
     },
   });
 
-  // 2. Recommendations
+  // 2. Recommendations with initialData & focus refetch
   const { data: recommendations = initialRecommendations } = useQuery<RecommendationView[]>({
     queryKey: ['recommendations'],
     initialData: initialRecommendations,
+    staleTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     queryFn: async () => {
@@ -63,14 +66,15 @@ export function DashboardView({
     },
   });
 
-  // 3. Knowledge graph data
+  // 3. Knowledge Graph Data with initialData & focus refetch
   const { data: graphData = initialGraphData } = useQuery<KnowledgeGraphData>({
-    queryKey: ['knowledge-graph', summary?.goalSlug],
+    queryKey: ['knowledge-graph', summary.goalSlug],
     initialData: initialGraphData,
+    staleTime: 0,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     queryFn: async () => {
-      const res = await fetch(`/api/knowledge-state/graph?goal=${summary?.goalSlug}`);
+      const res = await fetch(`/api/knowledge-state/graph?goal=${summary.goalSlug}`);
       if (!res.ok) throw new Error('Failed to fetch graph data');
       const payload = await res.json();
       return payload.data ?? payload;
@@ -78,25 +82,29 @@ export function DashboardView({
   });
 
   return (
-    <Box component="main" id="main-content" sx={{ py: { xs: 4, md: 6 } }}>
+    <Box component="main" id="main-content" sx={{ py: { xs: 3, md: 5 } }}>
       <Container maxWidth="lg">
-        <Stack spacing={5}>
-          {/* Top Bar / Header */}
-          <Stack direction={{ xs: 'column', md: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { md: 'center' }, gap: 2 }}>
-            <Stack spacing={0.5}>
-              <Chip
-                label="Active Curriculum Goal"
-                size="small"
-                sx={{
-                  alignSelf: 'flex-start',
-                  bgcolor: tokens.color.primaryLight,
-                  color: tokens.color.primaryDark,
-                  fontWeight: 700,
-                  fontSize: '0.75rem',
-                }}
-              />
-              <Typography variant="h1" sx={{ fontSize: '2rem' }}>
+        <Stack spacing={4}>
+          {/* Dashboard Header */}
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            sx={{ justifyContent: 'space-between', alignItems: { md: 'flex-end' } }}
+          >
+            <Stack spacing={1}>
+              <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                <Typography variant="caption" sx={{ color: tokens.color.googleBlue, fontWeight: 800, textTransform: 'uppercase' }}>
+                  Learning
+                </Typography>
+                <Typography variant="caption" sx={{ color: tokens.color.googleGreen, fontWeight: 800, textTransform: 'uppercase' }}>
+                  Dashboard
+                </Typography>
+              </Stack>
+              <Typography variant="h1" sx={{ fontSize: { xs: '2rem', md: '2.5rem' } }}>
                 {summary.goalTitle}
+              </Typography>
+              <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 640 }}>
+                Explore your interactive map below. Click any topic to view your progress or begin a quick lesson.
               </Typography>
             </Stack>
 
@@ -105,9 +113,10 @@ export function DashboardView({
               component={Link}
               href="/onboarding"
               size="small"
-              sx={{ alignSelf: 'flex-start' }}
+              onClick={() => soundFx.playClick()}
+              sx={{ alignSelf: 'flex-start', borderColor: tokens.color.border, color: tokens.color.textPrimary }}
             >
-              Change Goal / Recalibrate
+              Switch Goal / Reset
             </Button>
           </Stack>
 
@@ -121,49 +130,49 @@ export function DashboardView({
           >
             <Paper sx={{ p: 2.5, borderRadius: tokens.radius.md, border: 1, borderColor: 'divider' }}>
               <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
-                Average Mastery
+                Overall Mastery
               </Typography>
-              <Typography variant="h2" sx={{ my: 0.5, color: tokens.color.primary }}>
+              <Typography variant="h2" sx={{ my: 0.5, color: tokens.color.googleBlue }}>
                 {Math.round(summary.averageMastery * 100)}%
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Across {summary.totalConcepts} concepts
+                Across {summary.totalConcepts} topics
               </Typography>
             </Paper>
 
             <Paper sx={{ p: 2.5, borderRadius: tokens.radius.md, border: 1, borderColor: 'divider' }}>
               <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
-                Mastered
+                Topics Mastered
               </Typography>
-              <Typography variant="h2" sx={{ my: 0.5, color: tokens.color.mastered }}>
+              <Typography variant="h2" sx={{ my: 0.5, color: tokens.color.googleGreen }}>
                 {summary.masteredCount}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Nodes &ge; 85% mastery
+                Scored 85% or higher
               </Typography>
             </Paper>
 
             <Paper sx={{ p: 2.5, borderRadius: tokens.radius.md, border: 1, borderColor: 'divider' }}>
               <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
-                Needs Review
+                Needs Refresher
               </Typography>
-              <Typography variant="h2" sx={{ my: 0.5, color: tokens.color.fragile }}>
+              <Typography variant="h2" sx={{ my: 0.5, color: tokens.color.googleYellow }}>
                 {summary.fragileCount}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Decaying retrievability
+                Ready for a quick 2-min review
               </Typography>
             </Paper>
 
             <Paper sx={{ p: 2.5, borderRadius: tokens.radius.md, border: 1, borderColor: 'divider' }}>
               <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
-                Foundational Gaps
+                Foundation Gaps
               </Typography>
-              <Typography variant="h2" sx={{ my: 0.5, color: tokens.color.gap }}>
+              <Typography variant="h2" sx={{ my: 0.5, color: tokens.color.googleRed }}>
                 {summary.gapCount}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Prerequisite blockers
+                Prerequisites to review first
               </Typography>
             </Paper>
           </Box>
@@ -171,7 +180,7 @@ export function DashboardView({
           {/* Next Recommended Actions */}
           {recommendations && recommendations.length > 0 && (
             <Stack spacing={2}>
-              <Typography variant="h3">Recommended Next Actions (PRD §7.1)</Typography>
+              <Typography variant="h3">Recommended Next Steps</Typography>
               <Box
                 sx={{
                   display: 'grid',
@@ -192,19 +201,24 @@ export function DashboardView({
                       justifyContent: 'space-between',
                       gap: 2,
                       boxShadow: '0 4px 16px rgba(11, 31, 58, 0.04)',
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        borderColor: tokens.color.googleBlue,
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 6px 20px rgba(66, 133, 244, 0.12)',
+                      },
                     }}
                   >
                     <Stack spacing={1}>
                       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                         <Chip
-                          label={rec.kind.replace('_', ' ')}
+                          label={rec.kind === 'PREREQ_BRIDGE' ? 'Foundation Topic' : rec.kind === 'REVIEW_PROBE' ? 'Memory Refresher' : rec.kind === 'MISCONCEPTION_DRILL' ? 'Targeted Practice' : 'Next Topic'}
                           size="small"
                           sx={{
                             bgcolor: tokens.color.primaryLight,
-                            color: tokens.color.primaryDark,
+                            color: tokens.color.googleBlue,
                             fontWeight: 700,
                             fontSize: '0.7rem',
-                            textTransform: 'uppercase',
                           }}
                         />
                         <Typography variant="caption" sx={{ color: 'text.secondary' }}>
@@ -221,10 +235,15 @@ export function DashboardView({
                       variant="contained"
                       component={Link}
                       href={`/learn/${rec.conceptSlug}`}
+                      onClick={() => soundFx.playClick()}
                       size="small"
-                      sx={{ alignSelf: 'flex-start' }}
+                      sx={{
+                        alignSelf: 'flex-start',
+                        bgcolor: tokens.color.googleBlue,
+                        '&:hover': { bgcolor: tokens.color.primaryDark },
+                      }}
                     >
-                      Start Learning →
+                      Start Lesson →
                     </Button>
                   </Card>
                 ))}
@@ -236,14 +255,17 @@ export function DashboardView({
           <Stack spacing={2}>
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
               <Stack spacing={0.5}>
-                <Typography variant="h3">Cognitive Knowledge Map</Typography>
+                <Typography variant="h3">Your Learning Map</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Node icons and status badges display real-time BKT mastery; edges reveal prerequisite dependencies.
+                  Icons show your mastery level; lines connect earlier lessons to more advanced topics.
                 </Typography>
               </Stack>
               <Tabs
                 value={viewMode}
-                onChange={(_, v) => setViewMode(v)}
+                onChange={(_, v) => {
+                  soundFx.playClick();
+                  setViewMode(v);
+                }}
                 sx={{
                   bgcolor: tokens.color.lockedFill,
                   borderRadius: tokens.radius.pill,
@@ -258,13 +280,13 @@ export function DashboardView({
                   },
                   '& .Mui-selected': {
                     bgcolor: 'background.paper',
-                    color: tokens.color.primary,
+                    color: tokens.color.googleBlue,
                   },
                   '& .MuiTabs-indicator': { display: 'none' },
                 }}
               >
-                <Tab value="graph" label="Visual Graph" />
-                <Tab value="table" label="Table Twin" />
+                <Tab value="graph" label="Visual Map" />
+                <Tab value="table" label="List View" />
               </Tabs>
             </Stack>
 
@@ -326,14 +348,14 @@ export function DashboardView({
               <Stack spacing={1.5}>
                 <MasteryDots band={selectedNode.band} value={selectedNode.effectiveMastery} height={44} />
                 <Stack direction="row" sx={{ justifyContent: 'space-between', pt: 1 }}>
-                  <Typography variant="body2">Raw BKT Posterior:</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  <Typography variant="body2">Current Mastery:</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
                     {Math.round(selectedNode.rawMastery * 100)}%
                   </Typography>
                 </Stack>
                 <Stack direction="row" sx={{ justifyContent: 'space-between' }}>
-                  <Typography variant="body2">Ebbinghaus Retrievability:</Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  <Typography variant="body2">Memory Strength:</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
                     {Math.round(selectedNode.retrievability * 100)}%
                   </Typography>
                 </Stack>
@@ -343,7 +365,7 @@ export function DashboardView({
             {selectedNode.unmetPrerequisites.length > 0 && (
               <Stack spacing={1}>
                 <Typography variant="subtitle2" sx={{ color: tokens.color.gap, fontWeight: 700 }}>
-                  Unmet Prerequisites:
+                  Recommended First:
                 </Typography>
                 <Stack spacing={0.5}>
                   {selectedNode.unmetPrerequisites.map((p) => (
@@ -359,10 +381,15 @@ export function DashboardView({
               variant="contained"
               component={Link}
               href={`/learn/${selectedNode.slug}`}
+              onClick={() => soundFx.playClick()}
               fullWidth
               size="large"
+              sx={{
+                bgcolor: tokens.color.googleBlue,
+                '&:hover': { bgcolor: tokens.color.primaryDark },
+              }}
             >
-              Open Concept Studio →
+              Start Lesson →
             </Button>
           </Stack>
         )}

@@ -20,7 +20,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; fill: string
   MASTERED: { label: 'Mastered', color: tokens.color.mastered, fill: tokens.color.masteredFill },
   READY: { label: 'Ready to Learn', color: tokens.color.googleBlue, fill: tokens.color.primaryLight },
   IN_PROGRESS: { label: 'In Progress', color: tokens.color.inProgress, fill: tokens.color.inProgressFill },
-  GAP: { label: 'Prerequisite Gap', color: tokens.color.googleRed, fill: tokens.color.gapFill },
+  GAP: { label: 'Prerequisite Needed', color: tokens.color.googleRed, fill: tokens.color.gapFill },
   LOCKED: { label: 'Locked', color: tokens.color.locked, fill: tokens.color.lockedFill },
 };
 
@@ -65,13 +65,13 @@ export function PathViewComponent({
       <Container maxWidth="md" sx={{ py: 8 }}>
         <Paper sx={{ p: 4, textAlign: 'center', borderRadius: tokens.radius.lg }}>
           <Typography variant="h2" sx={{ mb: 2 }}>
-            No Learning Path Generated
+            No Learning Path Found
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3 }}>
-            Complete your diagnostic onboarding to generate a personalized path.
+            Complete your quick skill check to unlock your customized learning path.
           </Typography>
           <Button variant="contained" component={Link} href="/onboarding" onClick={() => soundFx.playClick()}>
-            Start Diagnostic →
+            Start Skill Check →
           </Button>
         </Paper>
       </Container>
@@ -106,18 +106,18 @@ export function PathViewComponent({
 
             <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
               <Typography variant="caption" sx={{ color: tokens.color.googleBlue, fontWeight: 800, textTransform: 'uppercase' }}>
-                Topological
+                Your Custom
               </Typography>
               <Typography variant="caption" sx={{ color: tokens.color.googleGreen, fontWeight: 800, textTransform: 'uppercase' }}>
-                Order
+                Learning Roadmap
               </Typography>
             </Stack>
 
             <Typography variant="h1" sx={{ fontSize: { xs: '2rem', md: '2.5rem' } }}>
-              Topological Path: {path.goalTitle}
+              Learning Roadmap: {path.goalTitle}
             </Typography>
             <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 720 }}>
-              Concepts are ordered such that every prerequisite precedes its dependent node. Mastered concepts are cleared, keeping your focus strictly on your Zone of Proximal Development.
+              Topics are organized step by step so foundational ideas come first. Completed topics are checked off, keeping your focus strictly on what is next.
             </Typography>
 
             <Box sx={{ pt: 1, maxWidth: 480 }}>
@@ -219,7 +219,7 @@ export function PathViewComponent({
                           gap: 0.5,
                         }}
                       >
-                        Rationale: {node.rationale}
+                        Why this is next: {node.rationale}
                       </Typography>
                     )}
                   </Stack>
@@ -235,7 +235,7 @@ export function PathViewComponent({
                         size="small"
                         sx={{ borderColor: tokens.color.googleGreen, color: tokens.color.googleGreen }}
                       >
-                        Review Studio
+                        Review Topic
                       </Button>
                     ) : isActionable ? (
                       <Button
@@ -249,15 +249,15 @@ export function PathViewComponent({
                           '&:hover': { bgcolor: tokens.color.primaryDark },
                         }}
                       >
-                        {node.status === 'IN_PROGRESS' ? 'Resume Study →' : 'Begin Concept →'}
+                        {node.status === 'IN_PROGRESS' ? 'Resume Lesson →' : 'Begin Lesson →'}
                       </Button>
                     ) : node.status === 'GAP' ? (
                       <Typography variant="caption" sx={{ color: tokens.color.googleRed, fontWeight: 700 }}>
-                        Prerequisite Missing
+                        Review Prerequisites First
                       </Typography>
                     ) : (
                       <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        Locked by Prerequisites
+                        Locked until ready
                       </Typography>
                     )}
                   </Box>

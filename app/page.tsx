@@ -19,43 +19,43 @@ const PROSE_WIDTH = 640;
 const LOOP_STEPS = [
   {
     num: '01',
-    label: 'Dynamic IRT Diagnostic',
-    detail: 'Five to seven adaptive questions locate the exact boundary of what you know using 2PL Item Response Theory.',
+    label: 'Smart Skill Check',
+    detail: 'A quick 5-minute quiz that pinpoints exactly what you already understand and what you should learn next.',
   },
   {
     num: '02',
-    label: 'Bayesian Knowledge Tracing',
-    detail: 'Tracks concept mastery probability P(M) in real-time, synchronously updating with every attempt.',
+    label: 'Real-Time Progress Tracking',
+    detail: 'Your mastery level updates instantly after every practice question with continuous accuracy.',
   },
   {
     num: '03',
-    label: 'Prerequisite Gap Interception',
-    detail: 'Unmet prerequisite blockers are identified directly across the DAG, not inferred from a coarse test score.',
+    label: 'Knowledge Gap Detection',
+    detail: 'Identifies missing foundation topics so you never get stuck on advanced lessons.',
   },
   {
     num: '04',
-    label: 'Topological Path Generation',
-    detail: 'The shortest route to your goal, pruning mastered ground and focusing exclusively on your Zone of Proximal Development.',
+    label: 'Personalized Learning Path',
+    detail: 'Creates the shortest step-by-step roadmap tailored specifically to your goals.',
   },
   {
     num: '05',
-    label: 'Multi-Lens Conceptual Explanations',
-    detail: 'Every concept renders in four lenses on demand: Intuitive Analogy, First Principles, Executable Code, and Visual Graphs.',
+    label: '4 Learning Styles',
+    detail: 'Switch any topic between intuitive analogies, deep explanations, practical code, and visual diagrams.',
   },
   {
     num: '06',
-    label: '4-Tier Socratic AI Tutoring',
-    detail: 'Scaffolded hint ladder (Clarifying question → Concept reminder → Isomorphic example → Walkthrough) that never leaks the answer.',
+    label: 'Interactive AI Tutor',
+    detail: 'Step-by-step guided hints that help you solve problems without spoiling the answer.',
   },
   {
     num: '07',
-    label: 'Ebbinghaus Forgetting Decay',
-    detail: 'Mastery decays lazily over time based on memory stability S. Interleaved micro-probes trigger before knowledge is lost.',
+    label: 'Smart Memory Reviews',
+    detail: 'Timed 2-minute refreshers scheduled right before you forget key ideas.',
   },
   {
     num: '08',
-    label: 'Explainable Next Recommendation',
-    detail: 'Ranked next action with the exact mathematical rationale clearly surfaced on your dashboard.',
+    label: 'Clear Next Recommendations',
+    detail: 'Always know what to study next with simple, transparent explanations on your dashboard.',
   },
 ];
 
@@ -195,7 +195,7 @@ export default function HomePage() {
       </Box>
 
       {/* ---------------------------------------------------------------- */}
-      {/* Hero Section with Google Accent Highlights                      */}
+      {/* Hero Section with Clean Language and Highlights                 */}
       {/* ---------------------------------------------------------------- */}
       <Box component="header">
         <Container maxWidth="lg" sx={{ pt: { xs: 6, md: 8 }, pb: { xs: 6, md: 9 } }}>
@@ -210,7 +210,7 @@ export default function HomePage() {
             {/* Left Hero Copy */}
             <Stack spacing={3.5}>
               <Chip
-                label="Cognitive Learning Intelligence System"
+                label="Personalized Learning Platform"
                 size="small"
                 sx={{
                   alignSelf: 'flex-start',
@@ -230,7 +230,7 @@ export default function HomePage() {
                   letterSpacing: '-0.02em',
                 }}
               >
-                Learning engineered around what you{' '}
+                Learning designed around what you{' '}
                 <Box component="span" sx={{ color: tokens.color.googleBlue }}>
                   actually
                 </Box>{' '}
@@ -248,9 +248,7 @@ export default function HomePage() {
                   lineHeight: 1.7,
                 }}
               >
-                Traditional courses are designed for everyone and optimised for no one. Adaptiq models your
-                evolving knowledge state across a mathematical concept graph — finding the exact boundary of what
-                you have and haven&apos;t mastered — and adapts every explanation, question, and Socratic hint to it.
+                Traditional courses teach everyone the exact same way. Adaptiq learns what you understand, skips what you already know, and gives you personalized explanations and guided hints for every topic.
               </Typography>
 
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ pt: 1 }}>
@@ -275,7 +273,7 @@ export default function HomePage() {
                     },
                   }}
                 >
-                  Calibrate Diagnostic →
+                  Start Skill Check →
                 </Button>
                 <Button
                   component={Link}
@@ -303,7 +301,7 @@ export default function HomePage() {
               </Stack>
             </Stack>
 
-            {/* Right Hero Image Card with Telemetry Overlay */}
+            {/* Right Hero Image Card with Clean Overlay */}
             <Paper
               elevation={0}
               sx={{
@@ -319,7 +317,7 @@ export default function HomePage() {
             >
               <Image
                 src="/hero-learning.jpg"
-                alt="Technical engineers analyzing knowledge graph telemetry"
+                alt="Students studying and tracking learning progress"
                 fill
                 style={{ objectFit: 'cover' }}
                 priority
@@ -336,7 +334,7 @@ export default function HomePage() {
                 }}
               >
                 <Chip
-                  label="Deterministic Core · Bayesian Tracing"
+                  label="Adaptive Learning Engine"
                   size="small"
                   sx={{
                     alignSelf: 'flex-start',
@@ -348,10 +346,10 @@ export default function HomePage() {
                   }}
                 />
                 <Typography variant="h3" sx={{ color: '#FFFFFF', fontSize: '1.25rem', fontWeight: 600 }}>
-                  Real-Time Cognitive Knowledge Graph
+                  Interactive Knowledge Map
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.8)', mt: 0.5, lineHeight: 1.5 }}>
-                  Continuous 2PL Item Response Theory & Bayesian Knowledge Tracing synchronize with every attempt in O(1).
+                  See your progress visually, understand prerequisite topics, and master complex skills step by step.
                 </Typography>
               </Box>
             </Paper>
@@ -363,9 +361,8 @@ export default function HomePage() {
       {/* Mastery Status Section                                           */}
       {/* ---------------------------------------------------------------- */}
       <Section tinted>
-        <SectionHeading title="Mastery you can read at a glance">
-          Knowledge is partial and probabilistic, so Adaptiq tracks it dynamically. Semantic icons and
-          status badges ensure clarity for all learners across greyscale, low contrast, and color-vision variations.
+        <SectionHeading title="Clear progress you can see at a glance">
+          Track your journey with intuitive colors and clear status indicators. Every card shows how well you know a topic and when it is time for a quick refresher.
         </SectionHeading>
 
         <Box
@@ -405,7 +402,7 @@ export default function HomePage() {
                   {sample.concept}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.5, fontWeight: 500 }}>
-                  {Math.round(sample.value * 100)}% effective mastery
+                  {Math.round(sample.value * 100)}% mastered
                 </Typography>
               </Box>
             </Paper>
@@ -414,11 +411,11 @@ export default function HomePage() {
       </Section>
 
       {/* ---------------------------------------------------------------- */}
-      {/* The 8-Step Adaptive Cognitive Cycle                              */}
+      {/* 8-Step Simple Learning Flow                                      */}
       {/* ---------------------------------------------------------------- */}
       <Section id="loop">
-        <SectionHeading title="One connected cognitive learning loop">
-          Not isolated screens. Every interaction writes synchronously to the next phase, creating a closed-loop system grounded in active retrieval.
+        <SectionHeading title="How Adaptiq works for you">
+          Every part of the platform works together to help you learn faster and remember longer.
         </SectionHeading>
 
         <Box
@@ -483,10 +480,10 @@ export default function HomePage() {
       <Section tinted>
         <Stack spacing={3} sx={{ maxWidth: PROSE_WIDTH, alignItems: 'flex-start' }}>
           <Typography variant="h2" sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' } }}>
-            Start with what you know.
+            Start with what you already know.
           </Typography>
           <Typography variant="body1" sx={{ color: 'text.secondary', fontSize: '1.05rem', lineHeight: 1.7 }}>
-            Take the 5-minute Bayesian Computerized Adaptive Diagnostic to localize your exact boundary of competence and unlock your tailored learning path.
+            Take a quick 5-minute initial skill check to unlock your customized learning path today.
           </Typography>
           <Button
             component={Link}
