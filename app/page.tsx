@@ -11,6 +11,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { MasteryDots } from '@/ui/graphics/MasteryDots';
+import { Footer } from '@/ui/components/Footer';
 import { tokens } from '@/ui/tokens';
 import { soundFx } from '@/ui/audio/sound';
 
@@ -508,6 +509,9 @@ export default function HomePage() {
           </Button>
         </Stack>
       </Section>
+
+      {/* Complete Footer */}
+      <Footer />
     </Box>
   );
 }

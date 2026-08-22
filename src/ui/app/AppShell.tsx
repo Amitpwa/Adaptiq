@@ -15,11 +15,13 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import { tokens } from '@/ui/tokens';
 import { soundFx } from '@/ui/audio/sound';
 
+import { Footer } from '@/ui/components/Footer';
+
 const NAV = [
   { href: '/dashboard', label: 'Knowledge Map' },
-  { href: '/path', label: 'Topological Path' },
-  { href: '/review', label: 'Spaced Retrieval' },
-  { href: '/profile', label: 'Profile & BYOK' },
+  { href: '/path', label: 'Learning Path' },
+  { href: '/review', label: 'Memory Review' },
+  { href: '/profile', label: 'Settings & AI' },
 ];
 
 export function AppShell({ userName, children }: { userName: string; children: React.ReactNode }) {
@@ -121,6 +123,8 @@ export function AppShell({ userName, children }: { userName: string; children: R
       <Box component="main" id="main-content" sx={{ flexGrow: 1, py: { xs: 3, md: 5 } }}>
         {children}
       </Box>
+
+      <Footer />
     </Box>
   );
 }

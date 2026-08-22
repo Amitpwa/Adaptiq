@@ -24,7 +24,8 @@ export async function listGoals(): Promise<GoalSummary[]> {
       id: true,
       slug: true,
       title: true,
-      summary: true,
+      // The column is `description`; `summary` is only the name the UI uses.
+      description: true,
       domain: { select: { title: true } },
       _count: { select: { concepts: true } },
     },
@@ -35,8 +36,8 @@ export async function listGoals(): Promise<GoalSummary[]> {
     id: g.id,
     slug: g.slug,
     title: g.title,
-    summary: g.summary,
-    description: g.summary,
+    summary: g.description,
+    description: g.description,
     domainTitle: g.domain.title,
     conceptCount: g._count.concepts,
     _count: g._count,
@@ -189,7 +190,8 @@ export async function loadQuestionWithAnswers(questionId: string) {
           id: true,
           label: true,
           isCorrect: true,
-          explanation: true,
+          // Why a distractor is wrong comes from the misconception it is
+          // tagged with, not from a per-option field.
           misconceptionId: true,
           position: true,
         },

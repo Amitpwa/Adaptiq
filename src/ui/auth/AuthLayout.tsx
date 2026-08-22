@@ -233,10 +233,10 @@ export function AuthLayout({
                 }}
               >
                 <Typography variant="subtitle1" sx={{ color: '#FFFFFF', fontWeight: 600 }}>
-                  Active Retrieval & Zone of Proximal Development
+                  Smart Practice at Your Exact Level
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.8)', mt: 0.5 }}>
-                  Continuous 2PL Item Response Theory & Bayesian Knowledge Tracing calibrate every problem to your ability boundary.
+                  Adaptiq continuously learns what you know and tailors every question, explanation, and hint to your pace.
                 </Typography>
               </Box>
             </Paper>
