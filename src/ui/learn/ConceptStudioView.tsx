@@ -37,6 +37,8 @@ export function ConceptStudioView({
   const [textAnswer, setTextAnswer] = useState<string>('');
   const [hintLevel, setHintLevel] = useState<number>(0);
   const [hints, setHints] = useState<SocraticHintResponse[]>([]);
+  const [aiExplanation, setAiExplanation] = useState<string | null>(null);
+  const [aiAttribution, setAiAttribution] = useState<string | null>(null);
   const [probeResult, setProbeResult] = useState<{
     correct: boolean;
     explanation?: string;
@@ -53,6 +55,25 @@ export function ConceptStudioView({
       if (!res.ok) throw new Error('Failed to load concept studio data');
       const payload = await res.json();
       return payload.data ?? payload;
+    },
+  });
+
+  // 1b. Dynamic GenAI Explanation Mutation
+  const explainMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/concepts/${conceptSlug}/explain`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lens }),
+      });
+      if (!res.ok) throw new Error('Failed to generate AI explanation');
+      const payload = await res.json();
+      return payload.data ?? payload;
+    },
+    onSuccess: (data: { text: string; attribution: string }) => {
+      soundFx.playHint();
+      setAiExplanation(data.text);
+      setAiAttribution(data.attribution);
     },
   });
 
@@ -218,11 +239,66 @@ export function ConceptStudioView({
                   whiteSpace: 'pre-line',
                 }}
               >
-                {concept.body}
+                {aiExplanation ?? concept.body}
               </Box>
 
+              {/* Gen AI Breakdown Generator & Model Attribution */}
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                sx={{
+                  justifyContent: 'space-between',
+                  alignItems: { sm: 'center' },
+                  gap: 2,
+                  p: 2,
+                  borderRadius: tokens.radius.md,
+                  bgcolor: tokens.color.primaryLight,
+                  border: 1,
+                  borderColor: tokens.color.primary,
+                }}
+              >
+                <Stack spacing={0.5}>
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                    <Chip
+                      label={aiAttribution ?? concept.attribution ?? 'AI Tutor Active'}
+                      size="small"
+                      sx={{
+                        bgcolor: tokens.color.googleBlue,
+                        color: '#FFFFFF',
+                        fontWeight: 700,
+                        fontSize: '0.7rem',
+                      }}
+                    />
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: tokens.color.primaryDark }}>
+                      Generative AI Explanation Engine
+                    </Typography>
+                  </Stack>
+                  <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                    Generate a personalized explanation tailored to your current mastery and learning style.
+                  </Typography>
+                </Stack>
+
+                <Button
+                  variant="contained"
+                  size="small"
+                  disabled={explainMutation.isPending}
+                  onClick={() => {
+                    soundFx.playClick();
+                    explainMutation.mutate();
+                  }}
+                  sx={{
+                    bgcolor: tokens.color.googleBlue,
+                    color: '#FFFFFF',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    '&:hover': { bgcolor: tokens.color.primaryDark },
+                  }}
+                >
+                  {explainMutation.isPending ? 'Generating Explanation…' : '✨ Regenerate with AI'}
+                </Button>
+              </Stack>
+
               <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                Lesson Material · Verified curriculum explanation.
+                Lesson Material · Powered by real-time adaptive AI calibration.
               </Typography>
             </Stack>
           </Paper>
