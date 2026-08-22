@@ -85,8 +85,8 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
   ]);
 
   return {
-    goalSlug: curriculum.goal.slug,
-    goalTitle: curriculum.goal.title,
+    goalSlug: curriculum.goalSlug,
+    goalTitle: curriculum.goalTitle,
     totalConcepts: conceptIds.length,
     masteredCount: counts.MASTERED,
     fragileCount: counts.FRAGILE,
