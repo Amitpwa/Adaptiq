@@ -1,0 +1,722 @@
+// Adaptiq data model
+// See docs/ARCHITECTURE.md §4 for entity rationale and index strategy.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  LEARNER
+  INSTRUCTOR
+  ADMIN
+}
+
+/// The four explanatory lenses a concept can be rendered through (PRD FR-3.1).
+enum Lens {
+  ANALOGY
+  FIRST_PRINCIPLES
+  CODE
+  VISUAL
+}
+
+enum MotionPreference {
+  SYSTEM
+  FULL
+  REDUCED
+}
+
+enum OnboardingStage {
+  REGISTERED
+  GOAL_SELECTED
+  PREFERENCES_SET
+  DIAGNOSTIC_IN_PROGRESS
+  COMPLETE
+}
+
+/// Mastery bands. Derived from effective mastery (raw x retrievability) by
+/// src/engine/constants.ts; persisted so list queries can filter on an index
+/// instead of computing the band per row in application code.
+enum MasteryStatus {
+  NOT_STARTED
+  GAP
+  IN_PROGRESS
+  FRAGILE
+  MASTERED
+}
+
+enum PathNodeStatus {
+  LOCKED
+  READY
+  IN_PROGRESS
+  MASTERED
+  GAP
+}
+
+enum AssessmentType {
+  DIAGNOSTIC
+  PRACTICE
+  PROBE
+  BRIDGE
+}
+
+enum AssessmentStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum QuestionType {
+  MCQ
+  MULTI
+  SHORT
+  CODE_COMPLETION
+  OUTPUT_PREDICTION
+}
+
+enum RecommendationKind {
+  NEXT_CONCEPT
+  PREREQ_BRIDGE
+  REVIEW_PROBE
+  MISCONCEPTION_DRILL
+}
+
+enum TutorRole {
+  LEARNER
+  TUTOR
+}
+
+/// Whether a hint came from the language model or the deterministic fallback
+/// ladder. Surfaced in the UI so the learner is never misled about provenance.
+enum HintSource {
+  AI
+  FALLBACK
+}
+
+enum EvidenceType {
+  DIAGNOSTIC_ITEM
+  PRACTICE_ITEM
+  PROBE_ITEM
+  DECAY_RECALC
+  MANUAL_OVERRIDE
+}
+
+// ---------------------------------------------------------------------------
+// Identity
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         Role     @default(LEARNER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile             LearnerProfile?
+  assessmentSessions  AssessmentSession[]
+  knowledgeStates     KnowledgeState[]
+  knowledgeEvents     KnowledgeStateEvent[]
+  misconceptions      LearnerMisconception[]
+  reviewSchedules     ReviewSchedule[]
+  learningPaths       LearningPath[]
+  recommendations     Recommendation[]
+  tutorSessions       TutorSession[]
+  activityEvents      ActivityEvent[]
+  cohortMemberships   CohortMember[]
+  instructedCohorts   Cohort[]               @relation("CohortInstructor")
+  aiGenerations       AiGeneration[]
+
+  @@index([role])
+  @@map("users")
+}
+
+model LearnerProfile {
+  userId              String           @id
+  cognitivePreference Lens             @default(ANALOGY)
+  motionPreference    MotionPreference @default(SYSTEM)
+  onboardingStage     OnboardingStage  @default(REGISTERED)
+  activeGoalId        String?
+  /// Rolling frustration signal (0-1) from consecutive failures and hint depth.
+  /// Drives the PRD's "drop Socratic friction" mitigation.
+  frustrationScore    Float            @default(0)
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  user       User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeGoal Goal? @relation(fields: [activeGoalId], references: [id], onDelete: SetNull)
+
+  @@index([activeGoalId])
+  @@map("learner_profiles")
+}
+
+// ---------------------------------------------------------------------------
+// Curriculum: the concept graph
+// ---------------------------------------------------------------------------
+
+model Domain {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  summary   String
+  createdAt DateTime @default(now())
+
+  concepts Concept[]
+  goals    Goal[]
+
+  @@map("domains")
+}
+
+model Concept {
+  id       String @id @default(cuid())
+  domainId String
+  slug     String
+  title    String
+  summary  String
+
+  /// IRT item parameters at the concept level, used to seed the tracer before
+  /// any question-level evidence exists.
+  difficultyB      Float @default(0.0)
+  discriminationA  Float @default(1.0)
+  guessC           Float @default(0.2)
+
+  /// Bayesian Knowledge Tracing parameters (per concept, from the curriculum
+  /// author). See src/engine/bkt.ts.
+  pInit    Float @default(0.15)
+  pTransit Float @default(0.20)
+  pSlip    Float @default(0.10)
+  pGuess   Float @default(0.20)
+
+  estimatedMinutes Int      @default(12)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  domain          Domain                @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  prerequisiteOf  ConceptEdge[]         @relation("EdgePrerequisite")
+  prerequisites   ConceptEdge[]         @relation("EdgeConcept")
+  contentLenses   ContentLens[]
+  questions       Question[]
+  misconceptions  Misconception[]
+  goalLinks       GoalConcept[]
+  layouts         ConceptLayout[]
+  knowledgeStates KnowledgeState[]
+  knowledgeEvents KnowledgeStateEvent[]
+  reviewSchedules ReviewSchedule[]
+  pathNodes       LearningPathNode[]
+  recommendations Recommendation[]
+  tutorSessions   TutorSession[]
+  assessments     AssessmentSession[]
+  aiGenerations   AiGeneration[]
+
+  @@unique([domainId, slug])
+  @@index([domainId])
+  @@map("concepts")
+}
+
+/// A directed prerequisite edge: `prerequisite` must be understood before
+/// `concept`. The graph is a DAG; acyclicity is enforced at write time by
+/// src/engine/graph.ts (Postgres cannot express it declaratively).
+model ConceptEdge {
+  prerequisiteId String
+  conceptId      String
+  /// How strongly the prerequisite gates the dependent concept (0-1).
+  strength       Float  @default(1.0)
+
+  prerequisite Concept @relation("EdgePrerequisite", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+  concept      Concept @relation("EdgeConcept", fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@id([prerequisiteId, conceptId])
+  @@index([conceptId])
+  @@index([prerequisiteId])
+  @@map("concept_edges")
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  domainId    String
+  slug        String   @unique
+  title       String
+  description String
+  createdAt   DateTime @default(now())
+
+  domain   Domain              @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  concepts GoalConcept[]
+  layouts  ConceptLayout[]
+  paths    LearningPath[]
+  profiles LearnerProfile[]
+  sessions AssessmentSession[]
+
+  @@index([domainId])
+  @@map("goals")
+}
+
+model GoalConcept {
+  goalId    String
+  conceptId String
+  /// Relevance of this concept to the goal (0-1); an input to recommendation
+  /// scoring so learners are not sent down tangents.
+  weight    Float  @default(1.0)
+
+  goal    Goal    @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@id([goalId, conceptId])
+  @@index([conceptId])
+  @@map("goal_concepts")
+}
+
+/// Deterministic layered-DAG coordinates, computed once per goal by
+/// src/engine/layout.ts. Identical for every learner so the knowledge map is
+/// stable across sessions; only node *state* is personal.
+model ConceptLayout {
+  goalId    String
+  conceptId String
+  rank      Int
+  order     Int
+  x         Float
+  y         Float
+
+  goal    Goal    @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@id([goalId, conceptId])
+  @@index([goalId])
+  @@map("concept_layouts")
+}
+
+model ContentLens {
+  id        String   @id @default(cuid())
+  conceptId String
+  lens      Lens
+  /// Complexity tier: 1 = stepping-stone, 2 = standard, 3 = rigorous.
+  /// Selected against current mastery for FR-3.2 dynamic complexity.
+  level     Int      @default(2)
+  body      String
+  citation  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@unique([conceptId, lens, level])
+  @@index([conceptId])
+  @@map("content_lenses")
+}
+
+model Misconception {
+  id              String   @id @default(cuid())
+  conceptId       String
+  code            String
+  label           String
+  description     String
+  remediationHint String
+  createdAt       DateTime @default(now())
+
+  concept  Concept                @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  options  QuestionOption[]
+  questions Question[]
+  learners LearnerMisconception[]
+
+  @@unique([conceptId, code])
+  @@index([conceptId])
+  @@map("misconceptions")
+}
+
+// ---------------------------------------------------------------------------
+// Assessment
+// ---------------------------------------------------------------------------
+
+model Question {
+  id        String       @id @default(cuid())
+  conceptId String
+  type      QuestionType
+  stem      String
+  /// Canonical answer for non-MCQ types. Also the reference the AI answer-leak
+  /// guard checks tutor output against, so it must never reach the client.
+  canonicalAnswer String?
+  explanation     String
+  difficultyB     Float  @default(0.0)
+  discriminationA Float  @default(1.0)
+  guessC          Float  @default(0.25)
+  misconceptionId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  concept       Concept          @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  misconception Misconception?   @relation(fields: [misconceptionId], references: [id], onDelete: SetNull)
+  options       QuestionOption[]
+  hints         QuestionHint[]
+  items         AssessmentItem[]
+  tutorSessions TutorSession[]
+
+  @@index([conceptId])
+  @@index([conceptId, difficultyB])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id              String  @id @default(cuid())
+  questionId      String
+  label           String
+  isCorrect       Boolean @default(false)
+  /// Distractors carry the misconception they diagnose, which is what turns a
+  /// wrong answer into an actionable signal rather than a lost point.
+  misconceptionId String?
+  position        Int
+
+  question      Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  misconception Misconception? @relation(fields: [misconceptionId], references: [id], onDelete: SetNull)
+
+  @@unique([questionId, position])
+  @@index([questionId])
+  @@map("question_options")
+}
+
+/// The deterministic Socratic ladder (PRD FR-5.2). Serves as the fallback when
+/// the LLM is slow, rate-limited, or unconfigured — which is why it lives in
+/// the database rather than in a prompt.
+model QuestionHint {
+  id         String @id @default(cuid())
+  questionId String
+  /// 1 = clarifying question, 2 = conceptual reminder,
+  /// 3 = isomorphic example, 4 = worked walkthrough.
+  level      Int
+  body       String
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, level])
+  @@index([questionId])
+  @@map("question_hints")
+}
+
+model AssessmentSession {
+  id        String           @id @default(cuid())
+  userId    String
+  type      AssessmentType
+  goalId    String?
+  conceptId String?
+  status    AssessmentStatus @default(IN_PROGRESS)
+  /// Latent ability estimate and its standard error (IRT). CAT stops when
+  /// standardError drops below the configured threshold.
+  theta         Float @default(0)
+  standardError Float @default(1)
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal    Goal?            @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  concept Concept?         @relation(fields: [conceptId], references: [id], onDelete: SetNull)
+  items   AssessmentItem[]
+
+  @@index([userId, status])
+  @@index([userId, type, startedAt])
+  @@map("assessment_sessions")
+}
+
+model AssessmentItem {
+  id         String @id @default(cuid())
+  sessionId  String
+  questionId String
+  position   Int
+  servedAt   DateTime  @default(now())
+  answeredAt DateTime?
+  /// Raw learner response, shape depends on question type.
+  response   Json?
+  isCorrect  Boolean?
+  latencyMs  Int?
+  /// Ability estimate at the moment this item was chosen — needed to audit
+  /// whether item selection actually tracked the learner.
+  thetaAtServe Float @default(0)
+
+  session  AssessmentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question Question          @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, position])
+  @@index([sessionId])
+  @@index([questionId])
+  @@map("assessment_items")
+}
+
+// ---------------------------------------------------------------------------
+// Knowledge state
+// ---------------------------------------------------------------------------
+
+model KnowledgeState {
+  id        String @id @default(cuid())
+  userId    String
+  conceptId String
+
+  /// BKT posterior P(mastery). Decay is NOT baked in here — it is applied at
+  /// read time from lastInteractionAt so no batch job is required.
+  pMastery Float @default(0)
+  /// Ebbinghaus stability S, in days. Grows with successful recall.
+  stabilityDays Float @default(1)
+  attempts      Int   @default(0)
+  correct       Int   @default(0)
+  /// Denormalised band over effective mastery, maintained on write so the
+  /// dashboard can filter on an index.
+  status MasteryStatus @default(NOT_STARTED)
+
+  lastInteractionAt DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conceptId])
+  @@index([userId, status])
+  @@index([userId, pMastery])
+  @@map("knowledge_states")
+}
+
+/// Append-only audit of every mastery change. Powers the progress timeline,
+/// the "why did this change?" explanation, and the PRD's success metrics.
+model KnowledgeStateEvent {
+  id           String       @id @default(cuid())
+  userId       String
+  conceptId    String
+  prior        Float
+  posterior    Float
+  evidenceType EvidenceType
+  /// Id of the AssessmentItem (or other artefact) that caused the change.
+  evidenceId   String?
+  createdAt    DateTime     @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, conceptId, createdAt])
+  @@map("knowledge_state_events")
+}
+
+model LearnerMisconception {
+  id              String    @id @default(cuid())
+  userId          String
+  misconceptionId String
+  occurrences     Int       @default(1)
+  lastSeenAt      DateTime  @default(now())
+  resolvedAt      DateTime?
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  misconception Misconception @relation(fields: [misconceptionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, misconceptionId])
+  @@index([userId, resolvedAt])
+  @@map("learner_misconceptions")
+}
+
+model ReviewSchedule {
+  id           String   @id @default(cuid())
+  userId       String
+  conceptId    String
+  dueAt        DateTime
+  intervalDays Float    @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conceptId])
+  @@index([userId, dueAt])
+  @@map("review_schedules")
+}
+
+// ---------------------------------------------------------------------------
+// Path and recommendation
+// ---------------------------------------------------------------------------
+
+model LearningPath {
+  id          String   @id @default(cuid())
+  userId      String
+  goalId      String
+  version     Int      @default(1)
+  generatedAt DateTime @default(now())
+
+  user  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal  Goal               @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  nodes LearningPathNode[]
+
+  @@unique([userId, goalId])
+  @@index([userId])
+  @@map("learning_paths")
+}
+
+model LearningPathNode {
+  id        String         @id @default(cuid())
+  pathId    String
+  conceptId String
+  position  Int
+  status    PathNodeStatus @default(LOCKED)
+  /// Human-readable reason this node is where it is, shown in the UI so the
+  /// learner is never told "do this" without being told why.
+  rationale String
+
+  path    LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  concept Concept      @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@unique([pathId, conceptId])
+  @@index([pathId, position])
+  @@map("learning_path_nodes")
+}
+
+model Recommendation {
+  id         String             @id @default(cuid())
+  userId     String
+  conceptId  String
+  kind       RecommendationKind
+  score      Float
+  rationale  String
+  createdAt  DateTime           @default(now())
+  consumedAt DateTime?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concept Concept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@index([userId, consumedAt, score])
+  @@map("recommendations")
+}
+
+// ---------------------------------------------------------------------------
+// Tutoring
+// ---------------------------------------------------------------------------
+
+model TutorSession {
+  id         String   @id @default(cuid())
+  userId     String
+  conceptId  String
+  questionId String?
+  /// Current rung on the scaffolding ladder (0-4). May only increase by one
+  /// per learner request — enforced in the service, not the client.
+  hintLevel  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  concept  Concept        @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  question Question?      @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  messages TutorMessage[]
+
+  @@index([userId, createdAt])
+  @@map("tutor_sessions")
+}
+
+model TutorMessage {
+  id             String      @id @default(cuid())
+  tutorSessionId String
+  role           TutorRole
+  content        String
+  hintLevel      Int?
+  source         HintSource?
+  createdAt      DateTime    @default(now())
+
+  session TutorSession @relation(fields: [tutorSessionId], references: [id], onDelete: Cascade)
+
+  @@index([tutorSessionId, createdAt])
+  @@map("tutor_messages")
+}
+
+/// Semantic cache for model output. Keyed by a hash of the inputs that
+/// actually change the result, so repeat views cost nothing.
+model AiGeneration {
+  id         String   @id @default(cuid())
+  userId     String?
+  conceptId  String?
+  lens       Lens?
+  promptHash String
+  model      String
+  content    String
+  tokensIn   Int      @default(0)
+  tokensOut  Int      @default(0)
+  latencyMs  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  concept Concept? @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+
+  @@unique([promptHash, model])
+  @@index([conceptId, lens])
+  @@map("ai_generations")
+}
+
+// ---------------------------------------------------------------------------
+// Cohorts, telemetry, and platform concerns
+// ---------------------------------------------------------------------------
+
+model Cohort {
+  id           String   @id @default(cuid())
+  name         String
+  instructorId String
+  createdAt    DateTime @default(now())
+
+  instructor User           @relation("CohortInstructor", fields: [instructorId], references: [id], onDelete: Cascade)
+  members    CohortMember[]
+
+  @@index([instructorId])
+  @@map("cohorts")
+}
+
+model CohortMember {
+  cohortId String
+  userId   String
+  joinedAt DateTime @default(now())
+
+  cohort Cohort @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([cohortId, userId])
+  @@index([userId])
+  @@map("cohort_members")
+}
+
+model ActivityEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+  @@map("activity_events")
+}
+
+/// Fixed-window rate limiting. Lives in Postgres because serverless functions
+/// cannot share in-process counters (see DAR D9).
+model RateLimit {
+  key         String
+  windowStart DateTime
+  count       Int      @default(0)
+
+  @@id([key, windowStart])
+  @@index([windowStart])
+  @@map("rate_limits")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  targetType String
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}

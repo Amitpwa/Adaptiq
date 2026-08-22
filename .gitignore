@@ -1,0 +1,17 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+/generated/prisma
+
+# Adaptiq
+.env
+.env.local
+.env*.local
+/src/generated
+/test-results
+/playwright-report
+/.next
+/node_modules
+*.tsbuildinfo
+next-env.d.ts
