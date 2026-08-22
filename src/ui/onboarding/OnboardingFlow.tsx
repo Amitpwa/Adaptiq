@@ -19,7 +19,7 @@ import { tokens } from '@/ui/tokens';
 export function OnboardingFlow() {
   const router = useRouter();
   const [step, setStep] = useState<number>(1);
-  const [goalSlug, setGoalSlug] = useState<string | null>(null);
+  const [_goalSlug, setGoalSlug] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   // Start Diagnostic Mutation

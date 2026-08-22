@@ -3,7 +3,7 @@ import 'server-only';
 import { prisma } from '@/lib/db';
 import { NotFoundError } from '@/lib/errors';
 import { loadDecayedStates, recordEvidence } from './knowledge-state';
-import { resolveLlmForUser, isGenerative } from '@/ai/resolve';
+import { resolveLlmForUser } from '@/ai/resolve';
 import type { Lens } from '@/generated/prisma/client';
 
 export interface ConceptExplanationView {

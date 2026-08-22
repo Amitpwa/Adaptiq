@@ -2,7 +2,6 @@ import 'server-only';
 
 import { prisma } from '@/lib/db';
 import { loadDecayedStates } from './knowledge-state';
-import { loadGoalCurriculum } from '@/repositories/curriculum';
 
 export interface ReviewQueueItem {
   conceptId: string;

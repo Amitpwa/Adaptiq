@@ -40,7 +40,7 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
     select: { activeGoal: { select: { slug: true } } },
   });
 
-  let goalSlug = profile?.activeGoal?.slug;
+  const goalSlug = profile?.activeGoal?.slug;
 
   // If new user has not completed onboarding/diagnostic yet, return null
   if (!goalSlug) {
