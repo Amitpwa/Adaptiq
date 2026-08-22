@@ -230,7 +230,7 @@ export function PathViewComponent({
                       <Button
                         variant="outlined"
                         component={Link}
-                        href={`/learn/${node.slug}`}
+                        href={`/learn/${node.conceptSlug}`}
                         onClick={() => soundFx.playClick()}
                         size="small"
                         sx={{ borderColor: tokens.color.googleGreen, color: tokens.color.googleGreen }}
@@ -241,7 +241,7 @@ export function PathViewComponent({
                       <Button
                         variant="contained"
                         component={Link}
-                        href={`/learn/${node.slug}`}
+                        href={`/learn/${node.conceptSlug}`}
                         onClick={() => soundFx.playClick()}
                         size="small"
                         sx={{
