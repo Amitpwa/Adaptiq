@@ -10,14 +10,16 @@ import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 import { tokens } from '@/ui/tokens';
+import { soundFx } from '@/ui/audio/sound';
 
 const NAV = [
   { href: '/dashboard', label: 'Knowledge Map' },
   { href: '/path', label: 'Topological Path' },
   { href: '/review', label: 'Spaced Retrieval' },
+  { href: '/profile', label: 'Profile & BYOK' },
 ];
 
 export function AppShell({ userName, children }: { userName: string; children: React.ReactNode }) {
@@ -37,7 +39,12 @@ export function AppShell({ userName, children }: { userName: string; children: R
       >
         <Container maxWidth="lg">
           <Toolbar disableGutters sx={{ gap: 3, minHeight: 64 }}>
-            <NextLink href="/dashboard" aria-label="Adaptiq dashboard" style={{ display: 'flex' }}>
+            <NextLink
+              href="/dashboard"
+              aria-label="Adaptiq dashboard"
+              style={{ display: 'flex' }}
+              onClick={() => soundFx.playClick()}
+            >
               <Image
                 src="/adaptiq-logo.svg"
                 alt="Adaptiq"
@@ -56,9 +63,10 @@ export function AppShell({ userName, children }: { userName: string; children: R
                       key={item.href}
                       component={NextLink}
                       href={item.href}
+                      onClick={() => soundFx.playClick()}
                       aria-current={active ? 'page' : undefined}
                       sx={{
-                        color: active ? tokens.color.primaryDark : 'text.secondary',
+                        color: active ? tokens.color.googleBlue : 'text.secondary',
                         bgcolor: active ? tokens.color.primaryLight : 'transparent',
                         fontWeight: active ? 700 : 500,
                         borderRadius: tokens.radius.pill,
@@ -76,16 +84,27 @@ export function AppShell({ userName, children }: { userName: string; children: R
             </Box>
 
             <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-              <Typography
-                variant="body2"
-                sx={{ color: 'text.secondary', display: { xs: 'none', sm: 'block' }, fontWeight: 500 }}
+              <Button
+                component={NextLink}
+                href="/profile"
+                size="small"
+                onClick={() => soundFx.playClick()}
+                startIcon={<SettingsIcon sx={{ fontSize: 18 }} />}
+                sx={{
+                  color: 'text.secondary',
+                  display: { xs: 'none', sm: 'inline-flex' },
+                  fontWeight: 600,
+                }}
               >
                 {userName}
-              </Typography>
+              </Button>
               <Button
                 variant="outlined"
                 size="small"
-                onClick={() => void signOut({ callbackUrl: '/' })}
+                onClick={() => {
+                  soundFx.playClick();
+                  void signOut({ callbackUrl: '/' });
+                }}
                 sx={{
                   borderColor: tokens.color.border,
                   color: tokens.color.textPrimary,
