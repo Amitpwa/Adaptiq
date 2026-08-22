@@ -5,7 +5,6 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
@@ -16,26 +15,21 @@ import { MasteryDots } from '@/ui/graphics/MasteryDots';
 import { tokens } from '@/ui/tokens';
 import type { ReviewQueueItem } from '@/services/review';
 
-export function ReviewQueueComponent() {
-  const { data: items, isLoading } = useQuery<ReviewQueueItem[]>({
+export function ReviewQueueComponent({
+  initialItems,
+}: {
+  initialItems: ReviewQueueItem[];
+}) {
+  const { data: items } = useQuery<ReviewQueueItem[]>({
     queryKey: ['due-reviews'],
+    initialData: initialItems,
+    staleTime: 60_000,
     queryFn: async () => {
       const res = await fetch('/api/review');
       if (!res.ok) throw new Error('Failed to load review items');
-      return res.json();
+      return (await res.json()).data;
     },
   });
-
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 12, gap: 2 }}>
-        <CircularProgress size={40} />
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-          Checking Ebbinghaus decay curve retention scores...
-        </Typography>
-      </Box>
-    );
-  }
 
   return (
     <Box component="main" id="main-content" sx={{ py: { xs: 4, md: 6 } }}>

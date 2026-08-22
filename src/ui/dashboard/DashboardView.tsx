@@ -6,7 +6,6 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import Drawer from '@mui/material/Drawer';
 import Paper from '@mui/material/Paper';
@@ -24,24 +23,35 @@ import type { DashboardSummary } from '@/services/dashboard';
 import type { KnowledgeGraphData, GraphNodeView } from '@/services/graph';
 import type { RecommendationView } from '@/services/recommendation';
 
-export function DashboardView() {
+export function DashboardView({
+  initialSummary,
+  initialRecommendations,
+  initialGraphData,
+}: {
+  initialSummary: DashboardSummary;
+  initialRecommendations: RecommendationView[];
+  initialGraphData: KnowledgeGraphData;
+}) {
   const [viewMode, setViewMode] = useState<'graph' | 'table'>('graph');
   const [selectedNode, setSelectedNode] = useState<GraphNodeView | null>(null);
 
-  // 1. Fetch dashboard metrics
-  const { data: summary, isLoading: isSummaryLoading } = useQuery<DashboardSummary>({
+  // 1. Dashboard metrics (instant with initialData)
+  const { data: summary } = useQuery<DashboardSummary>({
     queryKey: ['dashboard-summary'],
+    initialData: initialSummary,
+    staleTime: 60_000,
     queryFn: async () => {
       const res = await fetch('/api/dashboard/summary');
       if (!res.ok) throw new Error('Failed to fetch summary');
-      // The API wraps payloads in { data } so successes and failures share a shape.
       return (await res.json()).data;
     },
   });
 
-  // 2. Fetch recommendations
-  const { data: recommendations, isLoading: isRecsLoading } = useQuery<RecommendationView[]>({
+  // 2. Recommendations (instant with initialData)
+  const { data: recommendations } = useQuery<RecommendationView[]>({
     queryKey: ['recommendations'],
+    initialData: initialRecommendations,
+    staleTime: 60_000,
     queryFn: async () => {
       const res = await fetch('/api/recommendations');
       if (!res.ok) throw new Error('Failed to fetch recommendations');
@@ -49,45 +59,17 @@ export function DashboardView() {
     },
   });
 
-  // 3. Fetch knowledge graph data
-  const { data: graphData, isLoading: isGraphLoading } = useQuery<KnowledgeGraphData>({
+  // 3. Knowledge graph data (instant with initialData)
+  const { data: graphData } = useQuery<KnowledgeGraphData>({
     queryKey: ['knowledge-graph', summary?.goalSlug],
-    enabled: Boolean(summary?.goalSlug),
+    initialData: initialGraphData,
+    staleTime: 60_000,
     queryFn: async () => {
       const res = await fetch(`/api/knowledge-state/graph?goal=${summary?.goalSlug}`);
       if (!res.ok) throw new Error('Failed to fetch graph data');
       return (await res.json()).data;
     },
   });
-
-  if (isSummaryLoading || isRecsLoading || isGraphLoading) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 12, gap: 2 }}>
-        <CircularProgress size={40} />
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-          Loading your knowledge state and cognitive map...
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (!summary) {
-    return (
-      <Container maxWidth="md" sx={{ py: 8 }}>
-        <Paper sx={{ p: 4, textAlign: 'center', borderRadius: tokens.radius.lg }}>
-          <Typography variant="h2" sx={{ mb: 2 }}>
-            No Active Goal Found
-          </Typography>
-          <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3 }}>
-            Get started by taking the adaptive diagnostic to calibrate your knowledge graph.
-          </Typography>
-          <Button variant="contained" component={Link} href="/onboarding">
-            Start Diagnostic Onboarding
-          </Button>
-        </Paper>
-      </Container>
-    );
-  }
 
   return (
     <Box component="main" id="main-content" sx={{ py: { xs: 4, md: 6 } }}>
@@ -97,13 +79,13 @@ export function DashboardView() {
           <Stack direction={{ xs: 'column', md: 'row' }} sx={{ justifyContent: 'space-between', alignItems: { md: 'center' }, gap: 2 }}>
             <Stack spacing={0.5}>
               <Chip
-                label="Active Goal"
+                label="Active Curriculum Goal"
                 size="small"
                 sx={{
                   alignSelf: 'flex-start',
                   bgcolor: tokens.color.primaryLight,
                   color: tokens.color.primaryDark,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   fontSize: '0.75rem',
                 }}
               />
@@ -131,51 +113,51 @@ export function DashboardView() {
               gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' },
             }}
           >
-            <Paper sx={{ p: 2.5, borderRadius: tokens.radius.md }}>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
+            <Paper sx={{ p: 2.5, borderRadius: tokens.radius.md, border: 1, borderColor: 'divider' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
                 Average Mastery
               </Typography>
               <Typography variant="h2" sx={{ my: 0.5, color: tokens.color.primary }}>
                 {Math.round(summary.averageMastery * 100)}%
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Across {summary.totalConcepts} curriculum concepts
+                Across {summary.totalConcepts} concepts
               </Typography>
             </Paper>
 
-            <Paper sx={{ p: 2.5, borderRadius: tokens.radius.md }}>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
+            <Paper sx={{ p: 2.5, borderRadius: tokens.radius.md, border: 1, borderColor: 'divider' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
                 Mastered
               </Typography>
               <Typography variant="h2" sx={{ my: 0.5, color: tokens.color.mastered }}>
                 {summary.masteredCount}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Nodes &ge; 85% effective mastery
+                Nodes &ge; 85% mastery
               </Typography>
             </Paper>
 
-            <Paper sx={{ p: 2.5, borderRadius: tokens.radius.md }}>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
+            <Paper sx={{ p: 2.5, borderRadius: tokens.radius.md, border: 1, borderColor: 'divider' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
                 Needs Review
               </Typography>
               <Typography variant="h2" sx={{ my: 0.5, color: tokens.color.fragile }}>
                 {summary.fragileCount}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Decaying retrieval retention
+                Decaying retrievability
               </Typography>
             </Paper>
 
-            <Paper sx={{ p: 2.5, borderRadius: tokens.radius.md }}>
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'uppercase' }}>
+            <Paper sx={{ p: 2.5, borderRadius: tokens.radius.md, border: 1, borderColor: 'divider' }}>
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 700, textTransform: 'uppercase' }}>
                 Foundational Gaps
               </Typography>
               <Typography variant="h2" sx={{ my: 0.5, color: tokens.color.gap }}>
                 {summary.gapCount}
               </Typography>
               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                Active prerequisite blockers
+                Prerequisite blockers
               </Typography>
             </Paper>
           </Box>
@@ -183,7 +165,7 @@ export function DashboardView() {
           {/* Next Recommended Actions */}
           {recommendations && recommendations.length > 0 && (
             <Stack spacing={2}>
-              <Typography variant="h3">Recommended Next Actions</Typography>
+              <Typography variant="h3">Recommended Next Actions (PRD §7.1)</Typography>
               <Box
                 sx={{
                   display: 'grid',
@@ -203,6 +185,7 @@ export function DashboardView() {
                       flexDirection: 'column',
                       justifyContent: 'space-between',
                       gap: 2,
+                      boxShadow: '0 4px 16px rgba(11, 31, 58, 0.04)',
                     }}
                   >
                     <Stack spacing={1}>
@@ -247,7 +230,7 @@ export function DashboardView() {
           <Stack spacing={2}>
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
               <Stack spacing={0.5}>
-                <Typography variant="h3">Your Cognitive Knowledge Map</Typography>
+                <Typography variant="h3">Cognitive Knowledge Map</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   Halftone dot density encodes current mastery; edges reveal prerequisite dependencies.
                 </Typography>

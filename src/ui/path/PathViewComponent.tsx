@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import LinearProgress from '@mui/material/LinearProgress';
 import Paper from '@mui/material/Paper';
@@ -12,7 +11,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useQuery } from '@tanstack/react-query';
 
-import { tokens, masteryPalette } from '@/ui/tokens';
+import { tokens } from '@/ui/tokens';
 import type { PathView } from '@/services/path';
 import type { DashboardSummary } from '@/services/dashboard';
 
@@ -24,38 +23,39 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; fill: string
   LOCKED: { label: 'Locked', color: tokens.color.locked, fill: tokens.color.lockedFill },
 };
 
-export function PathViewComponent() {
-  // 1. Fetch active goal
-  const { data: summary, isLoading: isSummaryLoading } = useQuery<DashboardSummary>({
+const DEFAULT_STATUS_CFG = { label: 'Locked', color: tokens.color.locked, fill: tokens.color.lockedFill };
+
+export function PathViewComponent({
+  initialSummary,
+  initialPath,
+}: {
+  initialSummary: DashboardSummary | null;
+  initialPath: PathView | null;
+}) {
+  // 1. Summary with initialData
+  const { data: summary } = useQuery<DashboardSummary | null>({
     queryKey: ['dashboard-summary'],
+    initialData: initialSummary,
+    staleTime: 60_000,
     queryFn: async () => {
       const res = await fetch('/api/dashboard/summary');
       if (!res.ok) throw new Error('Failed to fetch summary');
-      return res.json();
+      return (await res.json()).data;
     },
   });
 
-  // 2. Fetch topological learning path
-  const { data: path, isLoading: isPathLoading } = useQuery<PathView>({
+  // 2. Learning path with initialData
+  const { data: path } = useQuery<PathView | null>({
     queryKey: ['learning-path', summary?.goalSlug],
     enabled: Boolean(summary?.goalSlug),
+    initialData: initialPath,
+    staleTime: 60_000,
     queryFn: async () => {
       const res = await fetch(`/api/path?goal=${summary?.goalSlug}`);
       if (!res.ok) throw new Error('Failed to fetch learning path');
-      return res.json();
+      return (await res.json()).data;
     },
   });
-
-  if (isSummaryLoading || isPathLoading) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 12, gap: 2 }}>
-        <CircularProgress size={40} />
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-          Computing topological path through concept graph...
-        </Typography>
-      </Box>
-    );
-  }
 
   if (!path) {
     return (
@@ -123,7 +123,7 @@ export function PathViewComponent() {
           {/* Sequential Path Timeline List */}
           <Stack spacing={2.5}>
             {path.nodes.map((node, index) => {
-              const cfg = STATUS_CONFIG[node.status] ?? STATUS_CONFIG.LOCKED;
+              const cfg = STATUS_CONFIG[node.status] ?? DEFAULT_STATUS_CFG;
               const isActionable = node.status === 'READY' || node.status === 'IN_PROGRESS';
 
               return (
