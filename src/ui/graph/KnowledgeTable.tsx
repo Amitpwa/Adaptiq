@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from
 
 import { MasteryDots } from '@/ui/graphics/MasteryDots';
 import { tokens, masteryPalette } from '@/ui/tokens';
+import { soundFx } from '@/ui/audio/sound';
 import type { GraphNodeView } from '@/services/graph';
 
 export function KnowledgeTable({
@@ -19,8 +20,11 @@ export function KnowledgeTable({
   onSelectNode: (node: GraphNodeView) => void;
 }) {
   return (
-    <TableContainer component={Paper} sx={{ borderRadius: tokens.radius.lg, border: 1, borderColor: 'divider' }}>
-      <Table aria-label="Knowledge state table">
+    <TableContainer
+      component={Paper}
+      sx={{ borderRadius: tokens.radius.lg, border: 1, borderColor: 'divider', overflow: 'hidden' }}
+    >
+      <Table aria-label="Cognitive Knowledge state table">
         <TableHead sx={{ bgcolor: tokens.color.background }}>
           <TableRow>
             <TableCell sx={{ fontWeight: 700 }}>Concept</TableCell>
@@ -37,8 +41,28 @@ export function KnowledgeTable({
               <TableRow
                 key={node.id}
                 hover
-                onClick={() => onSelectNode(node)}
-                sx={{ cursor: 'pointer', '&:last-child td, &:last-child th': { border: 0 } }}
+                tabIndex={0}
+                role="button"
+                aria-label={`Inspect concept ${node.title}`}
+                onClick={() => {
+                  soundFx.playClick();
+                  onSelectNode(node);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    soundFx.playClick();
+                    onSelectNode(node);
+                  }
+                }}
+                sx={{
+                  cursor: 'pointer',
+                  '&:last-child td, &:last-child th': { border: 0 },
+                  '&:focus-visible': {
+                    outline: `2px solid ${tokens.color.googleBlue}`,
+                    outlineOffset: -2,
+                  },
+                }}
               >
                 <TableCell component="th" scope="row">
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -60,18 +84,18 @@ export function KnowledgeTable({
                     sx={{
                       bgcolor: palette.fill,
                       color: palette.main,
-                      fontWeight: 600,
+                      fontWeight: 700,
                     }}
                   />
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
                     {Math.round(node.retrievability * 100)}%
                   </Typography>
                 </TableCell>
                 <TableCell>
                   {node.unmetPrerequisites.length === 0 ? (
-                    <Typography variant="caption" sx={{ color: tokens.color.mastered, fontWeight: 600 }}>
+                    <Typography variant="caption" sx={{ color: tokens.color.googleGreen, fontWeight: 700 }}>
                       ✓ Cleared
                     </Typography>
                   ) : (
@@ -83,7 +107,8 @@ export function KnowledgeTable({
                           size="small"
                           sx={{
                             bgcolor: tokens.color.gapFill,
-                            color: tokens.color.gap,
+                            color: tokens.color.googleRed,
+                            fontWeight: 600,
                             fontSize: '0.7rem',
                             mb: 0.5,
                           }}
