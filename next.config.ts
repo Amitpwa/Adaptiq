@@ -1,12 +1,5 @@
 import type { NextConfig } from 'next';
 
-/**
- * Content Security Policy.
- *
- * `unsafe-inline` for styles is required by Emotion/MUI, which injects style
- * tags at runtime. Scripts are nonce-free but restricted to same-origin; Next's
- * inline bootstrap requires `unsafe-inline` in development only.
- */
 const isDev = process.env.NODE_ENV === 'development';
 
 const csp = [
@@ -15,7 +8,6 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  // The Anthropic API is called server-side only; the browser never needs it.
   "connect-src 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
@@ -40,12 +32,15 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false, // Turn off double-invoking effects in local development for instantaneous clicks
   poweredByHeader: false,
   experimental: {
-    // Tree-shake MUI/icon barrel imports so the client bundle only ships what
-    // is actually referenced.
-    optimizePackageImports: ['@mui/material', '@mui/icons-material', '@xyflow/react'],
+    optimizePackageImports: [
+      '@mui/material',
+      '@mui/icons-material',
+      '@xyflow/react',
+      '@tanstack/react-query',
+    ],
   },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
