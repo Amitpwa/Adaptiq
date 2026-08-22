@@ -185,7 +185,7 @@ export function ProfileViewComponent({ initialData }: { initialData?: ProfileDat
                     <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
                       <AutoAwesomeIcon sx={{ color: tokens.color.googleBlue, fontSize: 24 }} />
                       <Typography variant="h3" sx={{ fontSize: '1.2rem' }}>
-                        Active Language Model Resolution (PRD §4.3)
+                        Active AI Tutor Provider
                       </Typography>
                     </Stack>
                     <Chip
