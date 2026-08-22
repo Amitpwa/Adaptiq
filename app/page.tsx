@@ -1,3 +1,5 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import Box from '@mui/material/Box';
@@ -10,6 +12,7 @@ import Typography from '@mui/material/Typography';
 
 import { MasteryDots } from '@/ui/graphics/MasteryDots';
 import { tokens } from '@/ui/tokens';
+import { soundFx } from '@/ui/audio/sound';
 
 const PROSE_WIDTH = 640;
 
@@ -128,7 +131,12 @@ export default function HomePage() {
       >
         <Container maxWidth="lg">
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <Link href="/" aria-label="Adaptiq home" style={{ display: 'flex', alignItems: 'center' }}>
+            <Link
+              href="/"
+              aria-label="Adaptiq home"
+              style={{ display: 'flex', alignItems: 'center' }}
+              onClick={() => soundFx.playClick()}
+            >
               <Image
                 src="/adaptiq-logo.svg"
                 alt="Adaptiq"
@@ -145,6 +153,7 @@ export default function HomePage() {
                 href="/login"
                 variant="outlined"
                 size="small"
+                onClick={() => soundFx.playClick()}
                 sx={{
                   borderColor: tokens.color.border,
                   color: tokens.color.textPrimary,
@@ -152,7 +161,8 @@ export default function HomePage() {
                   fontWeight: 600,
                   transition: 'all 0.2s ease',
                   '&:hover': {
-                    borderColor: tokens.color.primary,
+                    borderColor: tokens.color.googleBlue,
+                    color: tokens.color.googleBlue,
                     transform: 'translateY(-1px)',
                   },
                 }}
@@ -164,8 +174,9 @@ export default function HomePage() {
                 href="/register"
                 variant="contained"
                 size="small"
+                onClick={() => soundFx.playClick()}
                 sx={{
-                  bgcolor: tokens.color.textPrimary,
+                  bgcolor: tokens.color.googleBlue,
                   color: '#FFFFFF',
                   px: 2.5,
                   fontWeight: 600,
@@ -184,7 +195,7 @@ export default function HomePage() {
       </Box>
 
       {/* ---------------------------------------------------------------- */}
-      {/* Hero Section: Technical Positioning + Professional Photo Grid    */}
+      {/* Hero Section with Google Accent Highlights                      */}
       {/* ---------------------------------------------------------------- */}
       <Box component="header">
         <Container maxWidth="lg" sx={{ pt: { xs: 6, md: 8 }, pb: { xs: 6, md: 9 } }}>
@@ -199,12 +210,12 @@ export default function HomePage() {
             {/* Left Hero Copy */}
             <Stack spacing={3.5}>
               <Chip
-                label="Cognitive Learning Intelligence System (PRD v1.0)"
+                label="Cognitive Learning Intelligence System"
                 size="small"
                 sx={{
                   alignSelf: 'flex-start',
                   bgcolor: tokens.color.primaryLight,
-                  color: tokens.color.primaryDark,
+                  color: tokens.color.googleBlue,
                   fontWeight: 700,
                   borderRadius: tokens.radius.pill,
                   px: 1,
@@ -219,7 +230,14 @@ export default function HomePage() {
                   letterSpacing: '-0.02em',
                 }}
               >
-                Learning engineered around what you actually know.
+                Learning engineered around what you{' '}
+                <Box component="span" sx={{ color: tokens.color.googleBlue }}>
+                  actually
+                </Box>{' '}
+                <Box component="span" sx={{ color: tokens.color.googleGreen }}>
+                  know
+                </Box>
+                .
               </Typography>
               <Typography
                 variant="body1"
@@ -241,18 +259,19 @@ export default function HomePage() {
                   href="/register"
                   variant="contained"
                   size="large"
+                  onClick={() => soundFx.playClick()}
                   sx={{
                     px: 4,
                     py: 1.5,
                     fontSize: '1rem',
                     fontWeight: 600,
-                    bgcolor: tokens.color.primary,
-                    boxShadow: '0 4px 16px rgba(26, 95, 208, 0.25)',
+                    bgcolor: tokens.color.googleBlue,
+                    boxShadow: '0 4px 16px rgba(66, 133, 244, 0.3)',
                     transition: 'all 0.2s ease',
                     '&:hover': {
                       bgcolor: tokens.color.primaryDark,
                       transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 20px rgba(26, 95, 208, 0.35)',
+                      boxShadow: '0 6px 20px rgba(66, 133, 244, 0.4)',
                     },
                   }}
                 >
@@ -263,6 +282,7 @@ export default function HomePage() {
                   href="/login"
                   variant="outlined"
                   size="large"
+                  onClick={() => soundFx.playClick()}
                   sx={{
                     px: 3.5,
                     py: 1.5,
@@ -272,7 +292,8 @@ export default function HomePage() {
                     color: tokens.color.textPrimary,
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                      borderColor: tokens.color.primary,
+                      borderColor: tokens.color.googleBlue,
+                      color: tokens.color.googleBlue,
                       transform: 'translateY(-2px)',
                     },
                   }}
@@ -339,12 +360,12 @@ export default function HomePage() {
       </Box>
 
       {/* ---------------------------------------------------------------- */}
-      {/* Mastery Encoding (Halftone Substrate)                            */}
+      {/* Mastery Status Section                                           */}
       {/* ---------------------------------------------------------------- */}
       <Section tinted>
         <SectionHeading title="Mastery you can read at a glance">
-          Knowledge is partial and probabilistic, so Adaptiq draws it that way. Halftone dot density carries
-          the mastery quantity, ensuring clarity in greyscale, under low contrast, and for colour vision deficiencies.
+          Knowledge is partial and probabilistic, so Adaptiq tracks it dynamically. Semantic icons and
+          status badges ensure clarity for all learners across greyscale, low contrast, and color-vision variations.
         </SectionHeading>
 
         <Box
@@ -378,7 +399,7 @@ export default function HomePage() {
                 },
               }}
             >
-              <MasteryDots band={sample.band} value={sample.value} height={52} />
+              <MasteryDots band={sample.band} value={sample.value} height={48} labelled={false} />
               <Box sx={{ mt: 'auto' }}>
                 <Typography variant="h4" component="h3" sx={{ fontSize: '1.1rem' }}>
                   {sample.concept}
@@ -437,7 +458,7 @@ export default function HomePage() {
               <Typography
                 variant="caption"
                 sx={{
-                  color: tokens.color.primary,
+                  color: tokens.color.googleBlue,
                   fontWeight: 700,
                   fontSize: '0.85rem',
                   fontFamily: 'monospace',
@@ -472,11 +493,12 @@ export default function HomePage() {
             href="/register"
             variant="contained"
             size="large"
+            onClick={() => soundFx.playClick()}
             sx={{
               px: 4,
               py: 1.5,
               fontWeight: 600,
-              bgcolor: tokens.color.textPrimary,
+              bgcolor: tokens.color.googleBlue,
               color: '#FFFFFF',
               transition: 'all 0.2s ease',
               '&:hover': {

@@ -35,39 +35,45 @@ export function DashboardView({
   const [viewMode, setViewMode] = useState<'graph' | 'table'>('graph');
   const [selectedNode, setSelectedNode] = useState<GraphNodeView | null>(null);
 
-  // 1. Dashboard metrics (instant with initialData)
-  const { data: summary } = useQuery<DashboardSummary>({
+  // 1. Dashboard metrics (always re-fetch on focus to reflect new answers immediately)
+  const { data: summary = initialSummary } = useQuery<DashboardSummary>({
     queryKey: ['dashboard-summary'],
     initialData: initialSummary,
-    staleTime: 60_000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const res = await fetch('/api/dashboard/summary');
       if (!res.ok) throw new Error('Failed to fetch summary');
-      return (await res.json()).data;
+      const payload = await res.json();
+      return payload.data ?? payload;
     },
   });
 
-  // 2. Recommendations (instant with initialData)
-  const { data: recommendations } = useQuery<RecommendationView[]>({
+  // 2. Recommendations
+  const { data: recommendations = initialRecommendations } = useQuery<RecommendationView[]>({
     queryKey: ['recommendations'],
     initialData: initialRecommendations,
-    staleTime: 60_000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const res = await fetch('/api/recommendations');
       if (!res.ok) throw new Error('Failed to fetch recommendations');
-      return (await res.json()).data;
+      const payload = await res.json();
+      return payload.data ?? payload;
     },
   });
 
-  // 3. Knowledge graph data (instant with initialData)
-  const { data: graphData } = useQuery<KnowledgeGraphData>({
+  // 3. Knowledge graph data
+  const { data: graphData = initialGraphData } = useQuery<KnowledgeGraphData>({
     queryKey: ['knowledge-graph', summary?.goalSlug],
     initialData: initialGraphData,
-    staleTime: 60_000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const res = await fetch(`/api/knowledge-state/graph?goal=${summary?.goalSlug}`);
       if (!res.ok) throw new Error('Failed to fetch graph data');
-      return (await res.json()).data;
+      const payload = await res.json();
+      return payload.data ?? payload;
     },
   });
 
@@ -232,7 +238,7 @@ export function DashboardView({
               <Stack spacing={0.5}>
                 <Typography variant="h3">Cognitive Knowledge Map</Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  Halftone dot density encodes current mastery; edges reveal prerequisite dependencies.
+                  Node icons and status badges display real-time BKT mastery; edges reveal prerequisite dependencies.
                 </Typography>
               </Stack>
               <Tabs
@@ -299,12 +305,12 @@ export function DashboardView({
           <Stack spacing={3}>
             <Stack spacing={1}>
               <Chip
-                label={masteryPalette[selectedNode.band].label}
+                label={masteryPalette[selectedNode.band]?.label ?? 'In Progress'}
                 size="small"
                 sx={{
                   alignSelf: 'flex-start',
-                  bgcolor: masteryPalette[selectedNode.band].fill,
-                  color: masteryPalette[selectedNode.band].main,
+                  bgcolor: masteryPalette[selectedNode.band]?.fill ?? tokens.color.primaryLight,
+                  color: masteryPalette[selectedNode.band]?.main ?? tokens.color.primaryDark,
                   fontWeight: 700,
                 }}
               />
@@ -317,11 +323,8 @@ export function DashboardView({
             </Stack>
 
             <Paper sx={{ p: 2, borderRadius: tokens.radius.md, border: 1, borderColor: 'divider' }}>
-              <Stack spacing={1}>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary' }}>
-                  Halftone Mastery Density
-                </Typography>
-                <MasteryDots band={selectedNode.band} value={selectedNode.effectiveMastery} height={48} />
+              <Stack spacing={1.5}>
+                <MasteryDots band={selectedNode.band} value={selectedNode.effectiveMastery} height={44} />
                 <Stack direction="row" sx={{ justifyContent: 'space-between', pt: 1 }}>
                   <Typography variant="body2">Raw BKT Posterior:</Typography>
                   <Typography variant="body2" sx={{ fontWeight: 600 }}>

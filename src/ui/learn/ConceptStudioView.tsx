@@ -6,7 +6,6 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
-import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
 import FormControlLabel from '@mui/material/FormControlLabel';
@@ -22,10 +21,17 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { MasteryDots } from '@/ui/graphics/MasteryDots';
 import { tokens, masteryPalette } from '@/ui/tokens';
+import { soundFx } from '@/ui/audio/sound';
 import type { ConceptExplanationView } from '@/services/concept';
 import type { SocraticHintResponse } from '@/services/tutor';
 
-export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
+export function ConceptStudioView({
+  conceptSlug,
+  initialConceptData,
+}: {
+  conceptSlug: string;
+  initialConceptData?: ConceptExplanationView;
+}) {
   const [lens, setLens] = useState<'ANALOGY' | 'FIRST_PRINCIPLES' | 'CODE' | 'VISUAL'>('ANALOGY');
   const [selectedOptionId, setSelectedOptionId] = useState<string>('');
   const [textAnswer, setTextAnswer] = useState<string>('');
@@ -38,17 +44,19 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
     band?: string;
   } | null>(null);
 
-  // 1. Fetch Concept Studio Data
-  const { data: concept, isLoading, error, refetch } = useQuery<ConceptExplanationView>({
+  // 1. Fetch Concept Studio Data with initialData
+  const { data: concept, refetch } = useQuery<ConceptExplanationView>({
     queryKey: ['concept-studio', conceptSlug, lens],
+    initialData: lens === 'ANALOGY' ? initialConceptData : undefined,
     queryFn: async () => {
       const res = await fetch(`/api/concepts/${conceptSlug}?lens=${lens}`);
       if (!res.ok) throw new Error('Failed to load concept studio data');
-      return res.json();
+      const payload = await res.json();
+      return payload.data ?? payload;
     },
   });
 
-  // 2. Submit Micro-Assessment Probe
+  // 2. Submit Micro-Assessment Probe with playful sound fx
   const probeMutation = useMutation({
     mutationFn: async (payload: { itemId: string; optionId?: string; text?: string }) => {
       const res = await fetch(`/api/concepts/${conceptSlug}`, {
@@ -57,15 +65,21 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Failed to submit answer');
-      return res.json();
+      const result = await res.json();
+      return result.data ?? result;
     },
     onSuccess: (data) => {
       setProbeResult(data);
+      if (data.correct) {
+        soundFx.playSuccess();
+      } else {
+        soundFx.playWrong();
+      }
       refetch();
     },
   });
 
-  // 3. Request Next Socratic Hint
+  // 3. Request Next Socratic Hint with playful shimmer sound fx
   const hintMutation = useMutation({
     mutationFn: async (questionId: string) => {
       const res = await fetch(`/api/tutor/hint`, {
@@ -74,33 +88,24 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
         body: JSON.stringify({ questionId, currentLevel: hintLevel }),
       });
       if (!res.ok) throw new Error('Failed to fetch hint');
-      return res.json();
+      const result = await res.json();
+      return result.data ?? result;
     },
     onSuccess: (data: SocraticHintResponse) => {
+      soundFx.playHint();
       setHints((prev) => [...prev, data]);
       setHintLevel(data.hintLevel);
     },
   });
 
-  if (isLoading) {
-    return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 12, gap: 2 }}>
-        <CircularProgress size={40} />
-        <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-          Calibrating explanatory lens & Socratic scaffolding...
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (error || !concept) {
+  if (!concept) {
     return (
       <Container maxWidth="md" sx={{ py: 8 }}>
         <Paper sx={{ p: 4, textAlign: 'center', borderRadius: tokens.radius.lg }}>
           <Typography variant="h2" sx={{ mb: 2 }}>
             Concept Not Found
           </Typography>
-          <Button variant="contained" component={Link} href="/dashboard">
+          <Button variant="contained" component={Link} href="/dashboard" onClick={() => soundFx.playClick()}>
             Back to Dashboard
           </Button>
         </Paper>
@@ -108,7 +113,7 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
     );
   }
 
-  const currentQuestion = concept.questions[0];
+  const currentQuestion = concept.questions?.[0];
 
   return (
     <Box component="main" id="main-content" sx={{ py: { xs: 4, md: 6 } }}>
@@ -116,15 +121,20 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
         <Stack spacing={4}>
           {/* Breadcrumb & Top Bar */}
           <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <Button component={Link} href="/dashboard" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+            <Button
+              component={Link}
+              href="/dashboard"
+              onClick={() => soundFx.playClick()}
+              sx={{ fontWeight: 600, color: 'text.secondary' }}
+            >
               ← Return to Knowledge Map
             </Button>
             <Chip
-              label={masteryPalette[concept.band].label}
+              label={masteryPalette[concept.band]?.label ?? 'In Progress'}
               size="small"
               sx={{
-                bgcolor: masteryPalette[concept.band].fill,
-                color: masteryPalette[concept.band].main,
+                bgcolor: masteryPalette[concept.band]?.fill ?? tokens.color.primaryLight,
+                color: masteryPalette[concept.band]?.main ?? tokens.color.primaryDark,
                 fontWeight: 700,
               }}
             />
@@ -134,9 +144,14 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
           <Paper sx={{ p: { xs: 3, md: 4 }, borderRadius: tokens.radius.lg, border: 1, borderColor: 'divider' }}>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ justifyContent: 'space-between', alignItems: { md: 'center' } }}>
               <Stack spacing={1} sx={{ maxWidth: 640 }}>
-                <Typography variant="caption" sx={{ color: tokens.color.primary, fontWeight: 700, textTransform: 'uppercase' }}>
-                  Concept Studio
-                </Typography>
+                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                  <Typography variant="caption" sx={{ color: tokens.color.googleBlue, fontWeight: 800, textTransform: 'uppercase' }}>
+                    Concept
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: tokens.color.googleRed, fontWeight: 800, textTransform: 'uppercase' }}>
+                    Studio
+                  </Typography>
+                </Stack>
                 <Typography variant="h1" sx={{ fontSize: { xs: '1.8rem', md: '2.4rem' } }}>
                   {concept.conceptTitle}
                 </Typography>
@@ -144,11 +159,8 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
                   {concept.summary}
                 </Typography>
               </Stack>
-              <Box sx={{ minWidth: 200 }}>
-                <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', display: 'block', mb: 0.5 }}>
-                  Halftone Mastery ({Math.round(concept.effectiveMastery * 100)}%)
-                </Typography>
-                <MasteryDots band={concept.band} value={concept.effectiveMastery} height={44} />
+              <Box sx={{ minWidth: 220 }}>
+                <MasteryDots band={concept.band} value={concept.effectiveMastery ?? 0} height={48} labelled={false} />
               </Box>
             </Stack>
           </Paper>
@@ -160,7 +172,10 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
                 <Typography variant="h3">Explanatory Lenses (PRD FR-3.1)</Typography>
                 <Tabs
                   value={lens}
-                  onChange={(_, v) => setLens(v)}
+                  onChange={(_, v) => {
+                    soundFx.playClick();
+                    setLens(v);
+                  }}
                   sx={{
                     bgcolor: tokens.color.lockedFill,
                     borderRadius: tokens.radius.pill,
@@ -176,7 +191,7 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
                     },
                     '& .Mui-selected': {
                       bgcolor: 'background.paper',
-                      color: tokens.color.primary,
+                      color: tokens.color.googleBlue,
                     },
                     '& .MuiTabs-indicator': { display: 'none' },
                   }}
@@ -213,20 +228,21 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
           </Paper>
 
           {/* In-Flow Formative Micro-Assessment Probe */}
-          {currentQuestion && (
+          {currentQuestion ? (
             <Paper sx={{ p: { xs: 3, md: 4 }, borderRadius: tokens.radius.lg, border: 1, borderColor: 'divider' }}>
               <Stack spacing={3}>
                 <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
                   <Chip
                     label="In-Flow Retrieval Probe (FR-4.1)"
                     size="small"
-                    sx={{ bgcolor: tokens.color.primaryLight, color: tokens.color.primaryDark, fontWeight: 700 }}
+                    sx={{ bgcolor: tokens.color.primaryLight, color: tokens.color.googleBlue, fontWeight: 700 }}
                   />
                   <Button
                     variant="outlined"
                     size="small"
                     disabled={hintLevel >= 4 || hintMutation.isPending}
                     onClick={() => hintMutation.mutate(currentQuestion.id)}
+                    sx={{ color: tokens.color.googleYellow, borderColor: tokens.color.googleYellow }}
                   >
                     {hintMutation.isPending
                       ? 'Requesting Hint…'
@@ -240,10 +256,13 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
                   {currentQuestion.stem}
                 </Typography>
 
-                {currentQuestion.options.length > 0 ? (
+                {currentQuestion.options && currentQuestion.options.length > 0 ? (
                   <RadioGroup
                     value={selectedOptionId}
-                    onChange={(e) => setSelectedOptionId(e.target.value)}
+                    onChange={(e) => {
+                      soundFx.playClick();
+                      setSelectedOptionId(e.target.value);
+                    }}
                   >
                     <Stack spacing={1.5}>
                       {currentQuestion.options.map((opt) => (
@@ -252,7 +271,7 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
                           variant="outlined"
                           sx={{
                             borderRadius: tokens.radius.md,
-                            borderColor: selectedOptionId === opt.id ? tokens.color.primary : tokens.color.border,
+                            borderColor: selectedOptionId === opt.id ? tokens.color.googleBlue : tokens.color.border,
                             bgcolor: selectedOptionId === opt.id ? tokens.color.primaryLight : 'background.paper',
                             transition: 'all 0.15s ease',
                           }}
@@ -293,7 +312,7 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
                           borderRadius: tokens.radius.md,
                           bgcolor: tokens.color.primaryLight,
                           borderLeft: 4,
-                          borderColor: tokens.color.primary,
+                          borderColor: tokens.color.googleBlue,
                         }}
                       >
                         <Stack direction="row" sx={{ justifyContent: 'space-between', mb: 0.5 }}>
@@ -322,10 +341,10 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
                       borderRadius: tokens.radius.md,
                       bgcolor: probeResult.correct ? tokens.color.masteredFill : tokens.color.gapFill,
                       border: 1,
-                      borderColor: probeResult.correct ? tokens.color.mastered : tokens.color.gap,
+                      borderColor: probeResult.correct ? tokens.color.googleGreen : tokens.color.googleRed,
                     }}
                   >
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: probeResult.correct ? tokens.color.mastered : tokens.color.gap }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: probeResult.correct ? tokens.color.googleGreen : tokens.color.googleRed }}>
                       {probeResult.correct ? '✓ Verified Mastery! Bayesian Posterior Updated.' : '⚠ Foundational Misconception Identified.'}
                     </Typography>
                     {probeResult.explanation && (
@@ -348,7 +367,12 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
                           ...(textAnswer ? { text: textAnswer } : {}),
                         })
                       }
-                      sx={{ px: 4, py: 1.25 }}
+                      sx={{
+                        px: 4,
+                        py: 1.25,
+                        bgcolor: tokens.color.googleBlue,
+                        '&:hover': { bgcolor: tokens.color.primaryDark },
+                      }}
                     >
                       {probeMutation.isPending ? 'Grading & Updating BKT…' : 'Submit & Update Knowledge'}
                     </Button>
@@ -357,6 +381,7 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
                       variant="contained"
                       component={Link}
                       href="/dashboard"
+                      onClick={() => soundFx.playClick()}
                       sx={{ px: 4, py: 1.25 }}
                     >
                       Return to Map →
@@ -364,6 +389,18 @@ export function ConceptStudioView({ conceptSlug }: { conceptSlug: string }) {
                   )}
                 </Stack>
               </Stack>
+            </Paper>
+          ) : (
+            <Paper sx={{ p: 4, borderRadius: tokens.radius.lg, border: 1, borderColor: 'divider', textAlign: 'center' }}>
+              <Typography variant="h3" sx={{ mb: 1 }}>
+                Reading & Synthesis Phase
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+                Review the multi-lens explanation above. When ready, continue along your topological path.
+              </Typography>
+              <Button variant="contained" component={Link} href="/dashboard" onClick={() => soundFx.playClick()}>
+                Return to Knowledge Map →
+              </Button>
             </Paper>
           )}
         </Stack>

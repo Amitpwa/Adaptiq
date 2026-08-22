@@ -5,6 +5,11 @@ import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import LockIcon from '@mui/icons-material/Lock';
+import ErrorIcon from '@mui/icons-material/Error';
 import {
   ReactFlow,
   Background,
@@ -17,9 +22,16 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { MasteryDots } from '@/ui/graphics/MasteryDots';
 import { tokens, masteryPalette } from '@/ui/tokens';
 import type { GraphNodeView, GraphEdgeView } from '@/services/graph';
+
+const NODE_ICONS = {
+  MASTERED: CheckCircleIcon,
+  FRAGILE: WarningAmberIcon,
+  IN_PROGRESS: HourglassEmptyIcon,
+  GAP: ErrorIcon,
+  NOT_STARTED: LockIcon,
+};
 
 export type CustomConceptNodeData = {
   node: GraphNodeView;
@@ -29,14 +41,15 @@ export type CustomConceptNodeData = {
 
 function ConceptCustomNode({ data }: NodeProps<Node<CustomConceptNodeData>>) {
   const { node, onSelect } = data;
-  const palette = masteryPalette[node.band];
+  const palette = masteryPalette[node.band] ?? masteryPalette.NOT_STARTED;
+  const IconComponent = NODE_ICONS[node.band] ?? LockIcon;
 
   return (
     <Paper
       elevation={0}
       onClick={() => onSelect(node)}
       sx={{
-        width: 190,
+        width: 200,
         p: 2,
         borderRadius: tokens.radius.md,
         border: 1.5,
@@ -53,18 +66,32 @@ function ConceptCustomNode({ data }: NodeProps<Node<CustomConceptNodeData>>) {
     >
       <Handle type="target" position={Position.Top} style={{ background: palette.main, width: 8, height: 8 }} />
       <Stack spacing={1.25}>
-        <MasteryDots band={node.band} value={node.effectiveMastery} height={36} labelled={false} />
-        <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.875rem', lineHeight: 1.3 }}>
-          {node.title}
-        </Typography>
         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="caption" sx={{ color: palette.main, fontWeight: 700, fontSize: '0.75rem' }}>
-            {palette.label}
-          </Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              px: 1,
+              py: 0.25,
+              borderRadius: tokens.radius.pill,
+              bgcolor: palette.fill,
+            }}
+          >
+            <IconComponent sx={{ color: palette.main, fontSize: 14 }} />
+            <Typography variant="caption" sx={{ color: palette.main, fontWeight: 700, fontSize: '0.7rem' }}>
+              {palette.label}
+            </Typography>
+          </Box>
+
+          <Typography variant="caption" sx={{ color: palette.main, fontWeight: 800, fontFamily: 'monospace' }}>
             {Math.round(node.effectiveMastery * 100)}%
           </Typography>
         </Stack>
+
+        <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.875rem', lineHeight: 1.3 }}>
+          {node.title}
+        </Typography>
       </Stack>
       <Handle type="source" position={Position.Bottom} style={{ background: palette.main, width: 8, height: 8 }} />
     </Paper>
@@ -86,8 +113,8 @@ export function KnowledgeGraph({
 }) {
   const flowNodes = useMemo(() => {
     return nodes.map((node) => {
-      const x = node.order * 250 + 60;
-      const y = node.rank * 190 + 40;
+      const x = node.order * 260 + 60;
+      const y = node.rank * 180 + 40;
 
       return {
         id: node.id,

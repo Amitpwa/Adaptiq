@@ -15,20 +15,12 @@ import Typography from '@mui/material/Typography';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { tokens } from '@/ui/tokens';
+import { soundFx } from '@/ui/audio/sound';
+import type { ServedQuestion, DiagnosticProgress } from '@/services/diagnostic';
 
 export interface DiagnosticItemResponse {
-  finished: boolean;
-  questionNumber: number;
-  maxQuestions: number;
-  currentTheta?: number;
-  standardError?: number;
-  question?: {
-    id: string;
-    stem: string;
-    type: 'MCQ' | 'MULTI' | 'SHORT' | 'CODE_COMPLETION' | 'OUTPUT_PREDICTION';
-    conceptTitle: string;
-    options: Array<{ id: string; label: string }>;
-  };
+  question: ServedQuestion | null;
+  progress: DiagnosticProgress;
 }
 
 export function DiagnosticRunner({
@@ -52,22 +44,33 @@ export function DiagnosticRunner({
     queryFn: async () => {
       const res = await fetch(`/api/diagnostic/sessions/${sessionId}/next`);
       if (!res.ok) throw new Error('Failed to load next diagnostic item');
-      return (await res.json()).data;
+      const payload = await res.json();
+      return payload.data ?? payload;
     },
   });
 
   // Submit Answer mutation
   const answerMutation = useMutation({
-    mutationFn: async (payload: { itemId: string; optionId?: string; text?: string }) => {
+    mutationFn: async (payload: { questionId: string; optionId?: string; text?: string }) => {
       const res = await fetch(`/api/diagnostic/sessions/${sessionId}/answers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          itemId: payload.questionId,
+          ...(payload.optionId ? { optionId: payload.optionId } : {}),
+          ...(payload.text ? { text: payload.text } : {}),
+        }),
       });
       if (!res.ok) throw new Error('Failed to submit answer');
-      return (await res.json()).data;
+      const result = await res.json();
+      return result.data ?? result;
     },
     onSuccess: (data) => {
+      if (data.correct) {
+        soundFx.playSuccess();
+      } else {
+        soundFx.playWrong();
+      }
       setFeedback({
         correct: data.correct,
         explanation: data.explanation,
@@ -75,16 +78,17 @@ export function DiagnosticRunner({
     },
   });
 
-  // Complete diagnostic mutation
+  // Complete Diagnostic mutation
   const completeMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/diagnostic/sessions/${sessionId}/complete`, {
         method: 'POST',
       });
-      if (!res.ok) throw new Error('Failed to finalize diagnostic');
-      return (await res.json()).data;
+      if (!res.ok) throw new Error('Failed to complete diagnostic');
+      return res.json();
     },
     onSuccess: () => {
+      soundFx.playComplete();
       onComplete();
     },
   });
@@ -94,7 +98,7 @@ export function DiagnosticRunner({
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8, gap: 2 }}>
         <CircularProgress size={36} />
         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-          Calibrating next adaptive question...
+          Calibrating next adaptive question (2PL IRT Fisher Information)...
         </Typography>
       </Box>
     );
@@ -102,45 +106,59 @@ export function DiagnosticRunner({
 
   if (isError || !itemData) {
     return (
-      <Typography color="error">
-        Error loading diagnostic item. Please refresh to continue.
-      </Typography>
+      <Card sx={{ p: 4, textAlign: 'center', borderRadius: tokens.radius.lg }}>
+        <Typography variant="h3" sx={{ mb: 1.5 }}>
+          Diagnostic Calibration Error
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+          Could not fetch the next question. Please try reloading.
+        </Typography>
+        <Button variant="contained" onClick={() => refetch()}>
+          Retry Question
+        </Button>
+      </Card>
     );
   }
 
-  if (itemData.finished) {
+  if (itemData.progress?.complete || !itemData.question) {
     return (
-      <Card sx={{ p: 4, borderRadius: tokens.radius.lg, border: 1, borderColor: 'divider' }}>
-        <Stack spacing={3} sx={{ alignItems: 'center', textAlign: 'center', py: 3 }}>
+      <Card sx={{ p: 5, textAlign: 'center', borderRadius: tokens.radius.lg, border: 1, borderColor: 'divider' }}>
+        <Stack spacing={3} sx={{ alignItems: 'center', maxWidth: 460, mx: 'auto' }}>
           <Box
             sx={{
               width: 56,
               height: 56,
-              borderRadius: tokens.radius.pill,
+              borderRadius: '50%',
               bgcolor: tokens.color.masteredFill,
-              color: tokens.color.mastered,
+              color: tokens.color.googleGreen,
               display: 'grid',
               placeItems: 'center',
-              fontSize: '1.75rem',
-              fontWeight: 'bold',
+              fontSize: '1.5rem',
+              fontWeight: 700,
             }}
           >
             ✓
           </Box>
-          <Stack spacing={1}>
-            <Typography variant="h2">Diagnostic Complete</Typography>
-            <Typography variant="body1" sx={{ color: 'text.secondary', maxWidth: 480 }}>
-              We have accurately localized your boundary of competence. Generating your personalized topological learning path...
-            </Typography>
-          </Stack>
+          <Typography variant="h2" sx={{ fontSize: '1.75rem' }}>
+            Diagnostic Complete!
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            Your baseline ability estimate has been calibrated (θ = {itemData.progress?.theta?.toFixed(2) ?? '0.00'}).
+            We have generated your personalized topological learning path and knowledge map.
+          </Typography>
           <Button
             variant="contained"
             size="large"
             disabled={completeMutation.isPending}
             onClick={() => completeMutation.mutate()}
-            sx={{ px: 4, py: 1.5 }}
+            sx={{
+              px: 4,
+              py: 1.5,
+              bgcolor: tokens.color.googleBlue,
+              '&:hover': { bgcolor: tokens.color.primaryDark },
+            }}
           >
-            {completeMutation.isPending ? 'Generating Learning Path…' : 'Enter Dashboard'}
+            {completeMutation.isPending ? 'Generating Learning Path…' : 'Enter Dashboard →'}
           </Button>
         </Stack>
       </Card>
@@ -148,9 +166,11 @@ export function DiagnosticRunner({
   }
 
   const q = itemData.question;
-  if (!q) return null;
+  const currentNum = (itemData.progress?.itemsServed ?? 0) + 1;
+  const maxNum = itemData.progress?.maxItems ?? 7;
 
   const handleNext = () => {
+    soundFx.playClick();
     setFeedback(null);
     setSelectedOptionId('');
     setTextAnswer('');
@@ -158,15 +178,15 @@ export function DiagnosticRunner({
     refetch();
   };
 
-  const isAnswerValid = q.options.length > 0 ? Boolean(selectedOptionId) : Boolean(textAnswer.trim());
+  const isAnswerValid = q.options && q.options.length > 0 ? Boolean(selectedOptionId) : Boolean(textAnswer.trim());
 
   return (
     <Stack spacing={3}>
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <Chip
-          label={`Question ${itemData.questionNumber} of ${itemData.maxQuestions}`}
+          label={`Question ${currentNum} of ${maxNum}`}
           size="small"
-          sx={{ bgcolor: tokens.color.primaryLight, color: tokens.color.primaryDark, fontWeight: 600 }}
+          sx={{ bgcolor: tokens.color.primaryLight, color: tokens.color.googleBlue, fontWeight: 700 }}
         />
         <Chip
           label={`Concept: ${q.conceptTitle}`}
@@ -182,10 +202,13 @@ export function DiagnosticRunner({
             {q.stem}
           </Typography>
 
-          {q.options.length > 0 ? (
+          {q.options && q.options.length > 0 ? (
             <RadioGroup
               value={selectedOptionId}
-              onChange={(e) => setSelectedOptionId(e.target.value)}
+              onChange={(e) => {
+                soundFx.playClick();
+                setSelectedOptionId(e.target.value);
+              }}
             >
               <Stack spacing={1.5}>
                 {q.options.map((opt) => (
@@ -194,11 +217,11 @@ export function DiagnosticRunner({
                     variant="outlined"
                     sx={{
                       borderRadius: tokens.radius.md,
-                      borderColor: selectedOptionId === opt.id ? tokens.color.primary : tokens.color.border,
+                      borderColor: selectedOptionId === opt.id ? tokens.color.googleBlue : tokens.color.border,
                       bgcolor: selectedOptionId === opt.id ? tokens.color.primaryLight : 'background.paper',
                       transition: 'all 0.15s ease',
                       '&:hover': {
-                        borderColor: tokens.color.primary,
+                        borderColor: tokens.color.googleBlue,
                       },
                     }}
                   >
@@ -224,6 +247,7 @@ export function DiagnosticRunner({
             />
           )}
 
+          {/* Feedback Result Alert */}
           {feedback && (
             <Box
               sx={{
@@ -231,11 +255,11 @@ export function DiagnosticRunner({
                 borderRadius: tokens.radius.md,
                 bgcolor: feedback.correct ? tokens.color.masteredFill : tokens.color.gapFill,
                 border: 1,
-                borderColor: feedback.correct ? tokens.color.mastered : tokens.color.gap,
+                borderColor: feedback.correct ? tokens.color.googleGreen : tokens.color.googleRed,
               }}
             >
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: feedback.correct ? tokens.color.mastered : tokens.color.gap }}>
-                {feedback.correct ? 'Correct! Updating knowledge estimate...' : 'Identified foundational gap or misconception.'}
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: feedback.correct ? tokens.color.googleGreen : tokens.color.googleRed }}>
+                {feedback.correct ? '✓ Correct Answer' : 'Incorrect — Recording Concept Boundary'}
               </Typography>
               {feedback.explanation && (
                 <Typography variant="body2" sx={{ mt: 0.5, color: 'text.primary' }}>
@@ -252,20 +276,30 @@ export function DiagnosticRunner({
                 disabled={!isAnswerValid || answerMutation.isPending}
                 onClick={() =>
                   answerMutation.mutate({
-                    itemId: q.id,
+                    questionId: q.itemId,
                     ...(selectedOptionId ? { optionId: selectedOptionId } : {}),
                     ...(textAnswer ? { text: textAnswer } : {}),
                   })
                 }
-                sx={{ px: 4, py: 1.25 }}
+                sx={{
+                  px: 4,
+                  py: 1.25,
+                  bgcolor: tokens.color.googleBlue,
+                  '&:hover': { bgcolor: tokens.color.primaryDark },
+                }}
               >
-                {answerMutation.isPending ? 'Grading Answer…' : 'Submit Answer'}
+                {answerMutation.isPending ? 'Grading Response…' : 'Submit Answer'}
               </Button>
             ) : (
               <Button
                 variant="contained"
                 onClick={handleNext}
-                sx={{ px: 4, py: 1.25 }}
+                sx={{
+                  px: 4,
+                  py: 1.25,
+                  bgcolor: tokens.color.googleBlue,
+                  '&:hover': { bgcolor: tokens.color.primaryDark },
+                }}
               >
                 Next Question →
               </Button>

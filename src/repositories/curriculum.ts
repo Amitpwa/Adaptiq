@@ -4,14 +4,44 @@ import { prisma } from '@/lib/db';
 import { NotFoundError } from '@/lib/errors';
 import { buildGraph, type ConceptGraph } from '@/engine/graph';
 
-/**
- * Curriculum reads.
- *
- * The concept graph for a goal is loaded in two queries regardless of graph
- * size — one for nodes, one for edges — and then indexed in memory. The
- * alternative (walking prerequisites with a query per level) is the classic
- * N+1 and would put a round trip on every rank of the graph.
- */
+const curriculumCache = new Map<string, { data: GoalCurriculum; cachedAt: number }>();
+const CACHE_TTL_MS = 10 * 60 * 1000;
+
+export interface GoalSummary {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  description: string;
+  domainTitle: string;
+  conceptCount: number;
+  _count: { concepts: number };
+}
+
+export async function listGoals(): Promise<GoalSummary[]> {
+  const goals = await prisma.goal.findMany({
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      summary: true,
+      domain: { select: { title: true } },
+      _count: { select: { concepts: true } },
+    },
+    orderBy: { title: 'asc' },
+  });
+
+  return goals.map((g) => ({
+    id: g.id,
+    slug: g.slug,
+    title: g.title,
+    summary: g.summary,
+    description: g.summary,
+    domainTitle: g.domain.title,
+    conceptCount: g._count.concepts,
+    _count: g._count,
+  }));
+}
 
 export interface ConceptRow {
   id: string;
@@ -39,6 +69,11 @@ export interface GoalCurriculum {
 }
 
 export async function loadGoalCurriculum(goalSlug: string): Promise<GoalCurriculum> {
+  const cached = curriculumCache.get(goalSlug);
+  if (cached && Date.now() - cached.cachedAt < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
   const goal = await prisma.goal.findUnique({
     where: { slug: goalSlug },
     select: { id: true, slug: true, title: true },
@@ -74,14 +109,12 @@ export async function loadGoalCurriculum(goalSlug: string): Promise<GoalCurricul
   }));
   const conceptIds = concepts.map((c) => c.id);
 
-  // Only edges wholly inside the goal's concept set matter; an edge to a
-  // concept outside the goal is not something this learner has to satisfy.
   const edges = await prisma.conceptEdge.findMany({
     where: { conceptId: { in: conceptIds }, prerequisiteId: { in: conceptIds } },
     select: { prerequisiteId: true, conceptId: true, strength: true },
   });
 
-  return {
+  const result: GoalCurriculum = {
     goalId: goal.id,
     goalSlug: goal.slug,
     goalTitle: goal.title,
@@ -89,6 +122,9 @@ export async function loadGoalCurriculum(goalSlug: string): Promise<GoalCurricul
     conceptById: new Map(concepts.map((c) => [c.id, c])),
     graph: buildGraph(conceptIds, edges),
   };
+
+  curriculumCache.set(goalSlug, { data: result, cachedAt: Date.now() });
+  return result;
 }
 
 export interface QuestionRow {
@@ -102,14 +138,6 @@ export interface QuestionRow {
   options: Array<{ id: string; label: string; position: number }>;
 }
 
-/**
- * Load questions for a set of concepts, without answer keys.
- *
- * `isCorrect`, `canonicalAnswer`, `explanation`, and the misconception mapping
- * are deliberately excluded: this shape is what gets serialised to the browser,
- * and shipping the answer key alongside the question would make the assessment
- * meaningless to anyone who opens developer tools.
- */
 export async function loadQuestionsForConcepts(conceptIds: string[]): Promise<QuestionRow[]> {
   if (conceptIds.length === 0) return [];
 
@@ -133,7 +161,6 @@ export async function loadQuestionsForConcepts(conceptIds: string[]): Promise<Qu
   return questions;
 }
 
-/** Full question record including the answer key. Server-side only. */
 export async function loadQuestionWithAnswers(questionId: string) {
   const question = await prisma.question.findUnique({
     where: { id: questionId },
@@ -142,19 +169,14 @@ export async function loadQuestionWithAnswers(questionId: string) {
       conceptId: true,
       type: true,
       stem: true,
-      canonicalAnswer: true,
       explanation: true,
+      canonicalAnswer: true,
       difficultyB: true,
       discriminationA: true,
       guessC: true,
-      options: {
-        select: { id: true, label: true, isCorrect: true, misconceptionId: true, position: true },
-        orderBy: { position: 'asc' },
-      },
       concept: {
         select: {
           id: true,
-          slug: true,
           title: true,
           pInit: true,
           pTransit: true,
@@ -162,21 +184,19 @@ export async function loadQuestionWithAnswers(questionId: string) {
           pGuess: true,
         },
       },
+      options: {
+        select: {
+          id: true,
+          label: true,
+          isCorrect: true,
+          explanation: true,
+          misconceptionId: true,
+          position: true,
+        },
+        orderBy: { position: 'asc' },
+      },
     },
   });
   if (!question) throw NotFoundError('That question does not exist.');
   return question;
-}
-
-export async function listGoals() {
-  return prisma.goal.findMany({
-    select: {
-      id: true,
-      slug: true,
-      title: true,
-      description: true,
-      _count: { select: { concepts: true } },
-    },
-    orderBy: { title: 'asc' },
-  });
 }

@@ -1,34 +1,31 @@
 import Box from '@mui/material/Box';
 import type { SxProps, Theme } from '@mui/material/styles';
 
-import { tokens } from '../tokens';
-
 /**
- * Engineering graph-paper ground.
+ * Premium Modern Grid with Gradient Glow Background.
  *
- * Two layers — an 8px minor grid and a 48px major grid — at deliberately very
- * low alpha. The grid is a texture, not an element: it should register as
- * "this is a workbook" peripherally and never compete with content for
- * attention. If you consciously notice it while reading, it is too strong.
- *
- * Static by design. Scroll-linked or parallax backgrounds are a common trigger
- * for vestibular discomfort and would add nothing here.
+ * Combines a clean, subtle 32px modern UI grid with smooth, ambient linear and radial
+ * gradients (subtle slate/indigo/blue glow) that deliver an ultra-premium SaaS aesthetic
+ * rather than a raw notebook graph-paper look.
  */
 export function gridSx(): SxProps<Theme> {
-  const minor = `${tokens.color.grid}08`; // ~3%
-  const major = `${tokens.color.grid}0F`; // ~6%
   return {
-    backgroundImage: [
-      `linear-gradient(to right, ${minor} 1px, transparent 1px)`,
-      `linear-gradient(to bottom, ${minor} 1px, transparent 1px)`,
-      `linear-gradient(to right, ${major} 1px, transparent 1px)`,
-      `linear-gradient(to bottom, ${major} 1px, transparent 1px)`,
+    background: [
+      // Ambient radial gradient spots for depth and softness
+      'radial-gradient(ellipse at 15% 0%, rgba(26, 95, 208, 0.07) 0%, transparent 60%)',
+      'radial-gradient(ellipse at 85% 10%, rgba(14, 165, 233, 0.05) 0%, transparent 50%)',
+      'radial-gradient(ellipse at 50% 90%, rgba(99, 102, 241, 0.04) 0%, transparent 60%)',
+      // Clean modern orthogonal grid
+      'linear-gradient(to right, rgba(17, 26, 43, 0.04) 1px, transparent 1px)',
+      'linear-gradient(to bottom, rgba(17, 26, 43, 0.04) 1px, transparent 1px)',
+      // Base premium soft slate-to-white subtle gradient
+      'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 50%, #FFFFFF 100%)',
     ].join(', '),
-    backgroundSize: '8px 8px, 8px 8px, 48px 48px, 48px 48px',
+    backgroundSize: '100% 100%, 100% 100%, 100% 100%, 36px 36px, 36px 36px, 100% 100%',
   };
 }
 
-/** Full-bleed fixed grid layer for the application background. */
+/** Full-bleed fixed modern grid layer for the application background. */
 export function GridBackground() {
   return (
     <Box
