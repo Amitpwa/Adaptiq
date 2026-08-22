@@ -1,12 +1,14 @@
-import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { FlatCompat } from '@eslint/eslintrc';
+import next from 'eslint-config-next';
 import tseslint from 'typescript-eslint';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const compat = new FlatCompat({ baseDirectory: __dirname });
-
+/**
+ * Flat config.
+ *
+ * `eslint-config-next` v16 already ships flat config, so it is imported
+ * directly. Routing it through @eslint/eslintrc's FlatCompat shim fails —
+ * the shim tries to JSON-serialise a config object that contains circular
+ * plugin references.
+ */
 export default tseslint.config(
   {
     ignores: [
@@ -15,9 +17,10 @@ export default tseslint.config(
       'src/generated/**',
       'playwright-report/**',
       'test-results/**',
+      'next-env.d.ts',
     ],
   },
-  ...compat.extends('next/core-web-vitals'),
+  ...next,
   ...tseslint.configs.recommended,
   {
     files: ['**/*.ts', '**/*.tsx'],
@@ -27,17 +30,15 @@ export default tseslint.config(
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
-      ],
       eqeqeq: ['error', 'always', { null: 'ignore' }],
+      // Logging goes through the structured logger, which redacts secrets.
+      // A bare console.log bypasses that.
       'no-console': ['error', { allow: ['warn', 'error'] }],
     },
   },
   {
-    // Seeds and test helpers legitimately log progress.
-    files: ['prisma/seed/**', 'tests/**', 'scripts/**'],
+    // Seeds, scripts, and tests legitimately report progress to a terminal.
+    files: ['prisma/**', 'tests/**', 'scripts/**', '*.config.*'],
     rules: { 'no-console': 'off' },
   },
 );

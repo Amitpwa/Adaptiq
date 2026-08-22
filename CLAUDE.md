@@ -2,7 +2,7 @@
 
 > **Living document. Update it at the end of every working session — before finishing a task, revise §3 State, §6 Next Actions, and §5 Decision Log if anything changed. Stale context is a bug.**
 
-Last updated: 2026-08-22 · Phase: architecture complete, implementation not started
+Last updated: 2026-08-22 · Phase: auth + curriculum live on Neon; diagnostic API next
 
 ---
 
@@ -36,27 +36,36 @@ This connected loop matters more than the number of features.
 
 | Area | Status |
 |---|---|
-| PRD analysis | ✅ Complete |
-| DAR / tech stack | ✅ Complete — `docs/DAR-TECH-STACK.md` (12 decisions, assumptions A-01…A-07) |
-| System architecture | ✅ Complete — `docs/ARCHITECTURE.md` |
-| Knowledge graph + motion system | ✅ Complete — `docs/DESIGN-MOTION-SYSTEM.md` |
-| README | ✅ Complete |
-| Application code | ⬜ Not started — awaiting go-ahead |
+| Docs: PRD analysis · DAR · architecture · motion spec · README | ✅ |
+| Scaffold: Next 16, TS strict, ESLint flat, Prettier, Vitest | ✅ lint/typecheck/tests all clean |
+| **Neon Postgres connected** | ✅ 2 migrations applied (`init`, `llm_credentials`) |
+| Prisma schema — 27 models | ✅ |
+| Adaptive engine (irt, bkt, decay, graph, cat, path, layout, recommender) | ✅ 92 unit tests passing |
+| Seed: 26 concepts, 38 edges, 2 goals, 16 lenses, 9 questions, 36 hints, 9 misconceptions | ✅ idempotent, runs green |
+| Auth: Auth.js v5 credentials, bcrypt-12, register API, login/register pages | ✅ verified incl. security cases |
+| Lib layer: db, env, errors, logger, crypto, rate-limit, api-handler | ✅ |
+| AI layer: 4-tier resolution, Anthropic + OpenAI-compatible backends, model allowlist | ✅ written, untested |
+| BYOK: `LlmCredential` model + AES-256-GCM encryption | ⬜ API + UI still to build |
+| Diagnostic API / assessment / knowledge-state service | ⬜ **Next** |
+| Dashboard, path, learn, knowledge graph, motion layer | ⬜ |
 
-Nothing is implemented yet. No scaffold, no schema, no code.
+**Verified by running it:** register returns 201 and persists a bcrypt-12 hash with a
+transactional `LearnerProfile`; duplicate email → 409; weak password → 400; `role: "ADMIN"`
+injection → 400 with no row written. `/login` and `/register` render 200.
 
 ---
 
 ## 4. Resolved Stack
 
 ```
-Next.js 15 (App Router, TypeScript strict) — one Vercel deployment
-  ├─ UI        MUI v6 (Material Design, LIGHT theme) · React Flow · GSAP + @gsap/react
+Next.js 16.3 (App Router, TypeScript strict) — one Vercel deployment
+  ├─ UI        MUI v9 (Material Design, LIGHT theme) · React Flow · GSAP + @gsap/react
+  │            Fonts: Poppins (display) + Inter (body)
   ├─ API       Route Handlers: rate limit → session → Zod → RBAC → service → repository
   ├─ Auth      Auth.js v5 (Credentials, JWT) · bcryptjs cost 12 · DB-verified RBAC
   ├─ Engine    Pure TS: irt · cat · bkt · decay · graph · path · recommender · layout
   ├─ AI        Anthropic claude-sonnet-5 — explanations + Socratic hints ONLY
-  └─ Data      Prisma 6 → Neon Serverless PostgreSQL (pooled runtime, direct migrations)
+  └─ Data      Prisma 7 → Neon Serverless PostgreSQL (pooled runtime, direct migrations)
 
 Testing: Vitest (unit/integration/API) · Playwright + axe-core (E2E/a11y/motion)
 ```
@@ -75,24 +84,24 @@ Testing: Vitest (unit/integration/API) · Playwright + axe-core (E2E/a11y/motion
 | D9 | Rate limiting in **Postgres**, no Redis/DynamoDB | In-memory is semantically broken in serverless; one datastore is enough (A-03) |
 | D10 | **No arbitrary code execution** | `eval`/`vm` on Vercel is an RCE hole. Code items graded deterministically against stored answers (A-04) |
 | D11 | **GSAP** motion layer under a strict merge gate | Every animation must carry information + have a static equivalent + respect reduced motion (A-07) |
+| — | **Four-tier LLM resolution** | learner's own key → deployment key → free open-source model via OpenAI-compatible gateway → deterministic. No GPU on Vercel, so "free open source" means a hosted gateway (OpenRouter/Groq) with one operator key, never self-hosted weights |
+| — | **Learner API keys encrypted with AES-256-GCM** | Threat model is a DB dump. Key never returns to the browser; UI shows last-4 only. Does not defend against app-server RCE — that needs a KMS, recorded not assumed away |
 | D12 | **Server-computed deterministic graph layout** | A map that re-tumbles each visit destroys the learner's mental model; also makes tests deterministic |
 
 ---
 
 ## 6. Next Actions
 
-1. Scaffold Next.js 15 + strict TS + ESLint/Prettier + env validation + CI skeleton
-2. Prisma schema + migrations + idempotent seed (~50-node CS/AI concept graph, questions, 4-level hint ladders, misconceptions)
-3. Auth + RBAC + rate limiting + `withApi()` wrapper + error taxonomy
-4. Engine modules **with unit tests written alongside** (`irt`, `bkt`, `decay`, `graph`, `path`, `recommender`, `layout`)
-5. Diagnostic API → assessment/answer transaction → knowledge-state service
-6. Design system: light Material theme, halftone/grid graphics, `MotionProvider`, motion tokens
-7. Learner journey screens end-to-end on real data
-8. Knowledge graph + table twin
-9. AI layer with guardrails + fallback
-10. Review/progress/cohort → a11y pass → full test suite → security review → deploy → verify on Vercel
-
-**Blocked on:** stakeholder sign-off of assumptions A-01, A-02, A-04. Also need to know whether a Neon project and Anthropic key already exist, or whether to scaffold against local `postgres:16`.
+1. **Diagnostic vertical slice** — `POST /api/diagnostic/sessions`, `GET .../next`,
+   `POST .../answers`, `POST .../complete`; CAT item selection + theta update + seeding
+   `KnowledgeState` from the diagnostic
+2. Onboarding UI: goal picker → cognitive-lens preference → diagnostic runner
+3. Dashboard on real knowledge state (recommendations with rationale)
+4. BYOK: validate-key API (live provider call, rate-limited) + connect dialog + the
+   "connect your model" prompt at the point of use
+5. Knowledge graph + table twin + GSAP motion layer
+6. Tutor API with guardrails + hint ladder fallback
+7. Integration/API/E2E suites, a11y pass, Vercel deploy
 
 ---
 
@@ -131,3 +140,35 @@ Testing: Vitest (unit/integration/API) · Playwright + axe-core (E2E/a11y/motion
 | ZPD target accuracy | 0.70 (band 0.60–0.80) | drives difficulty selection |
 | AI timeout | 3500ms | then deterministic fallback |
 | Max interaction animation | 900ms | learning flow beats choreography |
+
+---
+
+## 9. Database & Environment Setup
+
+Docker is **not** used. The database is Neon (same provider as production), so local and deployed
+environments cannot drift.
+
+Required in `.env` (template in `.env.example`):
+
+| Variable | Where it comes from |
+|---|---|
+| `DATABASE_URL` | Neon **pooled** connection string — host contains `-pooler` |
+| `DIRECT_URL` | Neon **direct** connection string — migrations only; PgBouncer transaction mode cannot run DDL |
+| `AUTH_SECRET` | `openssl rand -base64 32` |
+| `AUTH_URL` | `http://localhost:3000` locally |
+| `ANTHROPIC_API_KEY` | Optional. Unset ⇒ deterministic mode (curated content + DB hint ladder) |
+
+Neon project settings that matter: Postgres 16+, region near the Vercel deployment region, and a
+separate branch for CI so integration tests run against real Postgres without touching dev data.
+
+---
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

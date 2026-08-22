@@ -1,0 +1,28 @@
+/* Minimal global styles. Everything else is themed through MUI. */
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/*
+ * Skip link: visually hidden until focused, then pinned to the top-left.
+ * Keyboard users must be able to bypass navigation on every page.
+ */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1000;
+  padding: 12px 20px;
+  background: #1a5fd0;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 0 0 8px 0;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  left: 0;
+}

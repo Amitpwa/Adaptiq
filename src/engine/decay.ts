@@ -10,6 +10,7 @@
 
 import {
   MASTERY_THRESHOLDS,
+  PREREQUISITE_UNLOCK_THRESHOLD,
   REVIEW_TRIGGER_RETRIEVABILITY,
   STABILITY,
 } from './constants';
@@ -76,16 +77,25 @@ export function bandFor(effective: number, attempts: number): MasteryBand {
 /**
  * Apply decay to a stored knowledge state.
  *
- * A concept whose retrievability has dropped below the review trigger is
- * downgraded to FRAGILE even when its raw mastery is high — that is the whole
- * point of modelling forgetting, and it is what schedules the review probe.
+ * FRAGILE and GAP mean different things to a learner, and the distinction is
+ * about history rather than the current number: FRAGILE is "you knew this and
+ * it is fading", GAP is "you never got this". A learner who genuinely mastered
+ * a concept months ago has a low *effective* mastery today, but telling them
+ * they have a gap is both inaccurate and demoralising — and it would send them
+ * to a full lesson when a two-minute review probe would restore it.
+ *
+ * So once raw mastery shows the concept was actually learned, decay can only
+ * pull the band down to FRAGILE, never to GAP.
  */
 export function applyDecay(state: ConceptKnowledge, now: Date): DecayedKnowledge {
   const r = retrievability(state.lastInteractionAt, state.stabilityDays, now);
   const effective = effectiveMastery(state.rawMastery, r);
   let band = bandFor(effective, state.attempts);
 
-  if (band === 'MASTERED' && r < REVIEW_TRIGGER_RETRIEVABILITY) {
+  const wasLearned = state.rawMastery >= PREREQUISITE_UNLOCK_THRESHOLD;
+  const hasFaded = r < REVIEW_TRIGGER_RETRIEVABILITY;
+
+  if (wasLearned && hasFaded && band !== 'MASTERED') {
     band = 'FRAGILE';
   }
 

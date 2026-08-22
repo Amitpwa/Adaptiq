@@ -101,6 +101,21 @@ enum HintSource {
   FALLBACK
 }
 
+/// Providers a learner can connect their own key for.
+enum LlmProvider {
+  ANTHROPIC
+  OPENAI
+}
+
+enum CredentialStatus {
+  /// Saved but not yet proven to work.
+  UNVERIFIED
+  /// A live call to the provider succeeded.
+  VERIFIED
+  /// The provider rejected the key on last use.
+  INVALID
+}
+
 enum EvidenceType {
   DIAGNOSTIC_ITEM
   PRACTICE_ITEM
@@ -133,6 +148,7 @@ model User {
   tutorSessions       TutorSession[]
   activityEvents      ActivityEvent[]
   cohortMemberships   CohortMember[]
+  llmCredentials      LlmCredential[]
   instructedCohorts   Cohort[]               @relation("CohortInstructor")
   aiGenerations       AiGeneration[]
 
@@ -157,6 +173,38 @@ model LearnerProfile {
 
   @@index([activeGoalId])
   @@map("learner_profiles")
+}
+
+/// A learner's own LLM API key ("bring your own key").
+///
+/// The key is stored ONLY as AES-256-GCM ciphertext and is never returned to
+/// the browser — the UI renders `keyHint` (last four characters) so a learner
+/// can tell which key is connected without the secret ever leaving the server.
+model LlmCredential {
+  id        String           @id @default(cuid())
+  userId    String
+  provider  LlmProvider
+  /// Base64 of iv:authTag:ciphertext. Decryptable only with ENCRYPTION_KEY.
+  ciphertext String
+  /// Last four characters of the key, for display. Not sensitive alone.
+  keyHint    String
+  status     CredentialStatus @default(UNVERIFIED)
+  /// Model the learner selected, validated against a server-side allowlist.
+  model      String?
+  lastVerifiedAt DateTime?
+  lastUsedAt     DateTime?
+  /// Provider's message from the most recent rejection, for a useful UI error.
+  lastError      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // One credential per provider per learner: reconnecting replaces, never
+  // accumulates orphaned secrets.
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("llm_credentials")
 }
 
 // ---------------------------------------------------------------------------
