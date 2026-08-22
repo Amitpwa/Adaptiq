@@ -51,9 +51,17 @@ export function GoalSelectionStep({
 
   if (error || !goals) {
     return (
-      <Typography color="error" variant="body1">
-        Unable to load learning goals right now. Please refresh or try again later.
-      </Typography>
+      <Card sx={{ p: 4, textAlign: 'center', borderRadius: tokens.radius.lg, border: 1, borderColor: 'divider' }}>
+        <Typography variant="h3" sx={{ mb: 1.5 }}>
+          Unable to Load Learning Goals
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
+          We could not load the available curricula. Please check your connection and try again.
+        </Typography>
+        <Button variant="contained" onClick={() => window.location.reload()}>
+          Refresh Page
+        </Button>
+      </Card>
     );
   }
 
