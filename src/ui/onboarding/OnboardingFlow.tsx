@@ -11,12 +11,16 @@ import Stack from '@mui/material/Stack';
 import { useMutation } from '@tanstack/react-query';
 
 import { StepIndicator } from '@/ui/components/StepIndicator';
-import { GoalSelectionStep } from '@/ui/onboarding/GoalSelectionStep';
+import { GoalSelectionStep, type GoalOption } from '@/ui/onboarding/GoalSelectionStep';
 import { LensPreferenceStep, type CognitiveLens } from '@/ui/onboarding/LensPreferenceStep';
 import { DiagnosticRunner } from '@/ui/onboarding/DiagnosticRunner';
 import { tokens } from '@/ui/tokens';
 
-export function OnboardingFlow() {
+export function OnboardingFlow({
+  initialGoals,
+}: {
+  initialGoals?: GoalOption[];
+}) {
   const router = useRouter();
   const [step, setStep] = useState<number>(1);
   const [_goalSlug, setGoalSlug] = useState<string | null>(null);
@@ -77,6 +81,7 @@ export function OnboardingFlow() {
 
             {step === 1 && (
               <GoalSelectionStep
+                initialGoals={initialGoals}
                 isPending={startDiagnosticMutation.isPending}
                 onSelectGoal={(slug) => {
                   setGoalSlug(slug);

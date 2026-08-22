@@ -23,16 +23,34 @@ export interface GoalOption {
 }
 
 export function GoalSelectionStep({
+  initialGoals,
   onSelectGoal,
   isPending = false,
 }: {
+  initialGoals?: GoalOption[];
   onSelectGoal: (goalSlug: string) => void;
   isPending?: boolean;
 }) {
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
-  const { data: goals, isLoading, error } = useQuery<GoalOption[]>({
+  const fallbackGoals: GoalOption[] = [
+    {
+      slug: 'ml-engineer',
+      title: 'Become a Machine Learning Engineer',
+      description: 'Master core foundations from linear algebra and gradient descent to deep neural networks and transformer architectures.',
+      conceptCount: 17,
+    },
+    {
+      slug: 'data-structures',
+      title: 'Master Data Structures & Algorithms',
+      description: 'Build algorithmic mastery from asymptotic analysis and recursion to dynamic programming and graph traversals.',
+      conceptCount: 12,
+    },
+  ];
+
+  const { data: goals = initialGoals && initialGoals.length > 0 ? initialGoals : fallbackGoals, isLoading, error } = useQuery<GoalOption[]>({
     queryKey: ['goals'],
+    initialData: initialGoals && initialGoals.length > 0 ? initialGoals : fallbackGoals,
     queryFn: async () => {
       const res = await fetch('/api/goals');
       if (!res.ok) throw new Error('Failed to fetch learning goals');
