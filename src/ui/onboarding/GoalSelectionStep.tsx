@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import { useQuery } from '@tanstack/react-query';
 
 import { tokens } from '@/ui/tokens';
+import { soundFx } from '@/ui/audio/sound';
 
 export interface GoalOption {
   slug: string;
@@ -35,7 +36,8 @@ export function GoalSelectionStep({
     queryFn: async () => {
       const res = await fetch('/api/goals');
       if (!res.ok) throw new Error('Failed to fetch learning goals');
-      return (await res.json()).data;
+      const payload = await res.json();
+      return payload.data ?? payload;
     },
   });
 
@@ -58,6 +60,14 @@ export function GoalSelectionStep({
   return (
     <Stack spacing={4}>
       <Stack spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Typography variant="caption" sx={{ color: tokens.color.googleBlue, fontWeight: 800, textTransform: 'uppercase' }}>
+            Curriculum
+          </Typography>
+          <Typography variant="caption" sx={{ color: tokens.color.googleGreen, fontWeight: 800, textTransform: 'uppercase' }}>
+            Target
+          </Typography>
+        </Stack>
         <Typography variant="h2" component="h1">
           Choose your learning goal
         </Typography>
@@ -80,23 +90,27 @@ export function GoalSelectionStep({
               key={goal.slug}
               sx={{
                 border: 2,
-                borderColor: isSelected ? tokens.color.primary : tokens.color.border,
+                borderColor: isSelected ? tokens.color.googleBlue : tokens.color.border,
                 bgcolor: isSelected ? tokens.color.primaryLight : 'background.paper',
                 borderRadius: tokens.radius.lg,
                 transition: 'all 0.2s ease',
                 '&:hover': {
-                  borderColor: tokens.color.primary,
-                  boxShadow: '0 4px 12px rgba(26, 95, 208, 0.08)',
+                  borderColor: tokens.color.googleBlue,
+                  boxShadow: '0 4px 16px rgba(66, 133, 244, 0.12)',
+                  transform: 'translateY(-2px)',
                 },
               }}
             >
               <CardActionArea
-                onClick={() => setSelectedSlug(goal.slug)}
+                onClick={() => {
+                  soundFx.playClick();
+                  setSelectedSlug(goal.slug);
+                }}
                 sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
               >
                 <CardContent sx={{ p: 0, width: '100%' }}>
                   <Stack spacing={1.5}>
-                    <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                       <Typography variant="h3" component="h2" sx={{ fontSize: '1.25rem' }}>
                         {goal.title}
                       </Typography>
@@ -105,8 +119,8 @@ export function GoalSelectionStep({
                         size="small"
                         sx={{
                           bgcolor: isSelected ? 'background.paper' : tokens.color.lockedFill,
-                          color: tokens.color.textSecondary,
-                          fontWeight: 600,
+                          color: isSelected ? tokens.color.googleBlue : tokens.color.textSecondary,
+                          fontWeight: 700,
                           fontSize: '0.75rem',
                         }}
                       />
@@ -125,10 +139,19 @@ export function GoalSelectionStep({
       <Button
         variant="contained"
         disabled={!selectedSlug || isPending}
-        onClick={() => selectedSlug && onSelectGoal(selectedSlug)}
-        sx={{ alignSelf: 'flex-start', px: 4, py: 1.5 }}
+        onClick={() => {
+          soundFx.playClick();
+          if (selectedSlug) onSelectGoal(selectedSlug);
+        }}
+        sx={{
+          alignSelf: 'flex-start',
+          px: 4,
+          py: 1.5,
+          bgcolor: tokens.color.googleBlue,
+          '&:hover': { bgcolor: tokens.color.primaryDark },
+        }}
       >
-        {isPending ? 'Preparing Diagnostic…' : 'Continue to Preferences'}
+        {isPending ? 'Preparing Diagnostic…' : 'Continue to Preferences →'}
       </Button>
     </Stack>
   );

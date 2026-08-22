@@ -10,6 +10,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { tokens } from '@/ui/tokens';
+import { soundFx } from '@/ui/audio/sound';
 
 export type CognitiveLens = 'ANALOGY' | 'FIRST_PRINCIPLES' | 'CODE' | 'VISUAL';
 
@@ -66,6 +67,14 @@ export function LensPreferenceStep({
   return (
     <Stack spacing={4}>
       <Stack spacing={1}>
+        <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+          <Typography variant="caption" sx={{ color: tokens.color.googleBlue, fontWeight: 800, textTransform: 'uppercase' }}>
+            Cognitive
+          </Typography>
+          <Typography variant="caption" sx={{ color: tokens.color.googleYellow, fontWeight: 800, textTransform: 'uppercase' }}>
+            Preference
+          </Typography>
+        </Stack>
         <Typography variant="h2" component="h1">
           Select your default explanatory lens
         </Typography>
@@ -88,30 +97,35 @@ export function LensPreferenceStep({
               key={lens.id}
               sx={{
                 border: 2,
-                borderColor: isSelected ? tokens.color.primary : tokens.color.border,
+                borderColor: isSelected ? tokens.color.googleBlue : tokens.color.border,
                 bgcolor: isSelected ? tokens.color.primaryLight : 'background.paper',
                 borderRadius: tokens.radius.lg,
                 transition: 'all 0.2s ease',
                 '&:hover': {
-                  borderColor: tokens.color.primary,
+                  borderColor: tokens.color.googleBlue,
+                  boxShadow: '0 4px 16px rgba(66, 133, 244, 0.12)',
+                  transform: 'translateY(-2px)',
                 },
               }}
             >
               <CardActionArea
-                onClick={() => setSelectedLens(lens.id)}
+                onClick={() => {
+                  soundFx.playClick();
+                  setSelectedLens(lens.id);
+                }}
                 sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}
               >
                 <CardContent sx={{ p: 0, width: '100%' }}>
                   <Stack spacing={1.5}>
-                    <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                       <Typography variant="h3" component="h2" sx={{ fontSize: '1.2rem' }}>
                         {lens.title}
                       </Typography>
                       <Typography
                         variant="caption"
                         sx={{
-                          fontWeight: 700,
-                          color: isSelected ? tokens.color.primaryDark : tokens.color.textSecondary,
+                          fontWeight: 800,
+                          color: isSelected ? tokens.color.googleBlue : tokens.color.textSecondary,
                           textTransform: 'uppercase',
                           letterSpacing: '0.05em',
                         }}
@@ -132,6 +146,7 @@ export function LensPreferenceStep({
                         color: 'text.primary',
                         border: 1,
                         borderColor: 'divider',
+                        fontFamily: lens.id === 'CODE' ? 'monospace' : 'inherit',
                       }}
                     >
                       {lens.sample}
@@ -145,16 +160,32 @@ export function LensPreferenceStep({
       </Box>
 
       <Stack direction="row" spacing={2}>
-        <Button variant="outlined" onClick={onBack} disabled={isPending}>
+        <Button
+          variant="outlined"
+          onClick={() => {
+            soundFx.playClick();
+            onBack();
+          }}
+          disabled={isPending}
+          sx={{ borderColor: tokens.color.border, color: tokens.color.textPrimary }}
+        >
           Back
         </Button>
         <Button
           variant="contained"
           disabled={isPending}
-          onClick={() => onSavePreferences(selectedLens)}
-          sx={{ px: 4, py: 1.5 }}
+          onClick={() => {
+            soundFx.playClick();
+            onSavePreferences(selectedLens);
+          }}
+          sx={{
+            px: 4,
+            py: 1.5,
+            bgcolor: tokens.color.googleBlue,
+            '&:hover': { bgcolor: tokens.color.primaryDark },
+          }}
         >
-          {isPending ? 'Saving Preferences…' : 'Start Adaptive Diagnostic'}
+          {isPending ? 'Saving Preferences…' : 'Start Adaptive Diagnostic →'}
         </Button>
       </Stack>
     </Stack>

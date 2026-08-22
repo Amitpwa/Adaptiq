@@ -12,14 +12,15 @@ import Typography from '@mui/material/Typography';
 import { useQuery } from '@tanstack/react-query';
 
 import { tokens } from '@/ui/tokens';
+import { soundFx } from '@/ui/audio/sound';
 import type { PathView } from '@/services/path';
 import type { DashboardSummary } from '@/services/dashboard';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; fill: string }> = {
   MASTERED: { label: 'Mastered', color: tokens.color.mastered, fill: tokens.color.masteredFill },
-  READY: { label: 'Ready to Learn', color: tokens.color.primary, fill: tokens.color.primaryLight },
+  READY: { label: 'Ready to Learn', color: tokens.color.googleBlue, fill: tokens.color.primaryLight },
   IN_PROGRESS: { label: 'In Progress', color: tokens.color.inProgress, fill: tokens.color.inProgressFill },
-  GAP: { label: 'Prerequisite Gap', color: tokens.color.gap, fill: tokens.color.gapFill },
+  GAP: { label: 'Prerequisite Gap', color: tokens.color.googleRed, fill: tokens.color.gapFill },
   LOCKED: { label: 'Locked', color: tokens.color.locked, fill: tokens.color.lockedFill },
 };
 
@@ -40,7 +41,8 @@ export function PathViewComponent({
     queryFn: async () => {
       const res = await fetch('/api/dashboard/summary');
       if (!res.ok) throw new Error('Failed to fetch summary');
-      return (await res.json()).data;
+      const payload = await res.json();
+      return payload.data ?? payload;
     },
   });
 
@@ -53,7 +55,8 @@ export function PathViewComponent({
     queryFn: async () => {
       const res = await fetch(`/api/path?goal=${summary?.goalSlug}`);
       if (!res.ok) throw new Error('Failed to fetch learning path');
-      return (await res.json()).data;
+      const payload = await res.json();
+      return payload.data ?? payload;
     },
   });
 
@@ -67,7 +70,7 @@ export function PathViewComponent({
           <Typography variant="body1" sx={{ color: 'text.secondary', mb: 3 }}>
             Complete your diagnostic onboarding to generate a personalized path.
           </Typography>
-          <Button variant="contained" component={Link} href="/onboarding">
+          <Button variant="contained" component={Link} href="/onboarding" onClick={() => soundFx.playClick()}>
             Start Diagnostic →
           </Button>
         </Paper>
@@ -82,7 +85,12 @@ export function PathViewComponent({
           {/* Header */}
           <Stack spacing={2}>
             <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-              <Button component={Link} href="/dashboard" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+              <Button
+                component={Link}
+                href="/dashboard"
+                onClick={() => soundFx.playClick()}
+                sx={{ fontWeight: 600, color: 'text.secondary' }}
+              >
                 ← Return to Knowledge Map
               </Button>
               <Chip
@@ -90,10 +98,19 @@ export function PathViewComponent({
                 size="small"
                 sx={{
                   bgcolor: tokens.color.masteredFill,
-                  color: tokens.color.mastered,
+                  color: tokens.color.googleGreen,
                   fontWeight: 700,
                 }}
               />
+            </Stack>
+
+            <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+              <Typography variant="caption" sx={{ color: tokens.color.googleBlue, fontWeight: 800, textTransform: 'uppercase' }}>
+                Topological
+              </Typography>
+              <Typography variant="caption" sx={{ color: tokens.color.googleGreen, fontWeight: 800, textTransform: 'uppercase' }}>
+                Order
+              </Typography>
             </Stack>
 
             <Typography variant="h1" sx={{ fontSize: { xs: '2rem', md: '2.5rem' } }}>
@@ -112,7 +129,7 @@ export function PathViewComponent({
                   borderRadius: tokens.radius.pill,
                   bgcolor: tokens.color.border,
                   '& .MuiLinearProgress-bar': {
-                    bgcolor: tokens.color.mastered,
+                    bgcolor: tokens.color.googleGreen,
                     borderRadius: tokens.radius.pill,
                   },
                 }}
@@ -134,13 +151,20 @@ export function PathViewComponent({
                     p: { xs: 2.5, md: 3.5 },
                     borderRadius: tokens.radius.lg,
                     border: 1.5,
-                    borderColor: isActionable ? tokens.color.primary : 'divider',
+                    borderColor: isActionable ? tokens.color.googleBlue : 'divider',
                     bgcolor: isActionable ? 'background.paper' : tokens.color.background,
-                    boxShadow: isActionable ? '0 6px 20px rgba(26, 95, 208, 0.08)' : 'none',
+                    boxShadow: isActionable ? '0 6px 20px rgba(66, 133, 244, 0.12)' : 'none',
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', md: 'auto 1fr auto' },
                     gap: 3,
                     alignItems: 'center',
+                    transition: 'all 0.2s ease',
+                    '&:hover': isActionable
+                      ? {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 8px 24px rgba(66, 133, 244, 0.18)',
+                        }
+                      : undefined,
                   }}
                 >
                   {/* Step Number Circle */}
@@ -179,43 +203,62 @@ export function PathViewComponent({
                         }}
                       />
                     </Stack>
+
                     <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                       {node.summary}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: tokens.color.primaryDark, fontWeight: 600 }}>
-                      Rationale: {node.rationale}
-                    </Typography>
+
+                    {node.rationale && (
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: tokens.color.googleBlue,
+                          fontWeight: 600,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                        }}
+                      >
+                        Rationale: {node.rationale}
+                      </Typography>
+                    )}
                   </Stack>
 
                   {/* Action CTA */}
-                  <Box sx={{ justifySelf: { xs: 'start', md: 'end' } }}>
+                  <Box sx={{ minWidth: 150, textAlign: { xs: 'left', md: 'right' } }}>
                     {node.status === 'MASTERED' ? (
                       <Button
-                        component={Link}
-                        href={`/learn/${node.conceptSlug}`}
                         variant="outlined"
-                        size="small"
-                        sx={{ borderColor: tokens.color.border }}
-                      >
-                        Review
-                      </Button>
-                    ) : node.status === 'LOCKED' ? (
-                      <Button variant="outlined" size="small" disabled sx={{ color: 'text.disabled' }}>
-                        Locked
-                      </Button>
-                    ) : (
-                      <Button
                         component={Link}
-                        href={`/learn/${node.conceptSlug}`}
+                        href={`/learn/${node.slug}`}
+                        onClick={() => soundFx.playClick()}
+                        size="small"
+                        sx={{ borderColor: tokens.color.googleGreen, color: tokens.color.googleGreen }}
+                      >
+                        Review Studio
+                      </Button>
+                    ) : isActionable ? (
+                      <Button
                         variant="contained"
+                        component={Link}
+                        href={`/learn/${node.slug}`}
+                        onClick={() => soundFx.playClick()}
                         size="small"
                         sx={{
-                          bgcolor: tokens.color.primary,
+                          bgcolor: tokens.color.googleBlue,
                           '&:hover': { bgcolor: tokens.color.primaryDark },
                         }}
                       >
-                        Start Learning →
+                        {node.status === 'IN_PROGRESS' ? 'Resume Study →' : 'Begin Concept →'}
                       </Button>
+                    ) : node.status === 'GAP' ? (
+                      <Typography variant="caption" sx={{ color: tokens.color.googleRed, fontWeight: 700 }}>
+                        Prerequisite Missing
+                      </Typography>
+                    ) : (
+                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                        Locked by Prerequisites
+                      </Typography>
                     )}
                   </Box>
                 </Paper>

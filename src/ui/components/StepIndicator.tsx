@@ -19,10 +19,10 @@ export function StepIndicator({
   return (
     <Stack spacing={2} sx={{ width: '100%', mb: 4 }}>
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="body2" sx={{ fontWeight: 600, color: tokens.color.primary }}>
+        <Typography variant="body2" sx={{ fontWeight: 700, color: tokens.color.googleBlue }}>
           Step {currentStep} of {totalSteps}: {labels[currentStep - 1] ?? ''}
         </Typography>
-        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 600 }}>
           {Math.round(progress)}% Complete
         </Typography>
       </Stack>
@@ -34,7 +34,7 @@ export function StepIndicator({
           borderRadius: tokens.radius.pill,
           bgcolor: tokens.color.primaryLight,
           '& .MuiLinearProgress-bar': {
-            bgcolor: tokens.color.primary,
+            bgcolor: tokens.color.googleBlue,
             borderRadius: tokens.radius.pill,
           },
         }}
