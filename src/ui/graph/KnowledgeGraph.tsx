@@ -33,39 +33,40 @@ function ConceptCustomNode({ data }: NodeProps<Node<CustomConceptNodeData>>) {
 
   return (
     <Paper
-      elevation={1}
+      elevation={0}
       onClick={() => onSelect(node)}
       sx={{
-        width: 180,
-        p: 1.5,
+        width: 190,
+        p: 2,
         borderRadius: tokens.radius.md,
-        border: 2,
+        border: 1.5,
         borderColor: palette.main,
         bgcolor: 'background.paper',
         cursor: 'pointer',
-        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+        boxShadow: '0 4px 12px rgba(11, 31, 58, 0.05)',
+        transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: '0 6px 16px rgba(0,0,0,0.1)',
+          transform: 'translateY(-3px)',
+          boxShadow: '0 8px 24px rgba(11, 31, 58, 0.12)',
         },
       }}
     >
-      <Handle type="target" position={Position.Top} style={{ background: palette.main }} />
-      <Stack spacing={1}>
+      <Handle type="target" position={Position.Top} style={{ background: palette.main, width: 8, height: 8 }} />
+      <Stack spacing={1.25}>
         <MasteryDots band={node.band} value={node.effectiveMastery} height={36} labelled={false} />
-        <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.85rem', lineHeight: 1.3 }}>
+        <Typography variant="body2" sx={{ fontWeight: 700, fontSize: '0.875rem', lineHeight: 1.3 }}>
           {node.title}
         </Typography>
         <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="caption" sx={{ color: palette.main, fontWeight: 600 }}>
+          <Typography variant="caption" sx={{ color: palette.main, fontWeight: 700, fontSize: '0.75rem' }}>
             {palette.label}
           </Typography>
-          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
             {Math.round(node.effectiveMastery * 100)}%
           </Typography>
         </Stack>
       </Stack>
-      <Handle type="source" position={Position.Bottom} style={{ background: palette.main }} />
+      <Handle type="source" position={Position.Bottom} style={{ background: palette.main, width: 8, height: 8 }} />
     </Paper>
   );
 }
@@ -85,8 +86,8 @@ export function KnowledgeGraph({
 }) {
   const flowNodes = useMemo(() => {
     return nodes.map((node) => {
-      const x = node.order * 240 + 60;
-      const y = node.rank * 180 + 40;
+      const x = node.order * 250 + 60;
+      const y = node.rank * 190 + 40;
 
       return {
         id: node.id,
@@ -114,7 +115,18 @@ export function KnowledgeGraph({
   }, [edges]);
 
   return (
-    <Box sx={{ width: '100%', height: 500, borderRadius: tokens.radius.lg, border: 1, borderColor: 'divider', overflow: 'hidden', bgcolor: tokens.color.background }}>
+    <Box
+      sx={{
+        width: '100%',
+        height: 520,
+        borderRadius: tokens.radius.lg,
+        border: 1,
+        borderColor: 'divider',
+        overflow: 'hidden',
+        bgcolor: tokens.color.background,
+        boxShadow: '0 4px 20px rgba(11, 31, 58, 0.04)',
+      }}
+    >
       <ReactFlow
         nodes={flowNodes}
         edges={flowEdges}

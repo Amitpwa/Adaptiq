@@ -6,9 +6,8 @@ import { AppShell } from '@/ui/app/AppShell';
 /**
  * Authenticated learner layout.
  *
- * The session is verified against the database here, not merely read from the
- * cookie. Middleware only checks that a cookie exists, which is a rendering
- * optimisation rather than a security control — this is the real gate.
+ * Verifies session against the database and wraps the learner views inside
+ * the unified AppShell chrome.
  */
 export default async function LearnerLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();

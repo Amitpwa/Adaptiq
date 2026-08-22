@@ -15,17 +15,11 @@ import Typography from '@mui/material/Typography';
 import { tokens } from '@/ui/tokens';
 
 const NAV = [
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/path', label: 'Your path' },
+  { href: '/dashboard', label: 'Knowledge Map' },
+  { href: '/path', label: 'Topological Path' },
+  { href: '/review', label: 'Spaced Retrieval' },
 ];
 
-/**
- * Authenticated application chrome.
- *
- * Navigation uses real links rather than click handlers so it works with
- * middle-click, keyboard, and screen-reader link lists. The current page is
- * marked with aria-current, not colour alone.
- */
 export function AppShell({ userName, children }: { userName: string; children: React.ReactNode }) {
   const pathname = usePathname();
 
@@ -47,16 +41,16 @@ export function AppShell({ userName, children }: { userName: string; children: R
               <Image
                 src="/adaptiq-logo.svg"
                 alt="Adaptiq"
-                width={96}
-                height={26}
+                width={112}
+                height={30}
                 style={{ height: 'auto' }}
               />
             </NextLink>
 
             <Box component="nav" aria-label="Main" sx={{ flexGrow: 1 }}>
-              <Stack direction="row" spacing={0.5}>
+              <Stack direction="row" spacing={1}>
                 {NAV.map((item) => {
-                  const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  const active = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                   return (
                     <Button
                       key={item.href}
@@ -67,6 +61,11 @@ export function AppShell({ userName, children }: { userName: string; children: R
                         color: active ? tokens.color.primaryDark : 'text.secondary',
                         bgcolor: active ? tokens.color.primaryLight : 'transparent',
                         fontWeight: active ? 700 : 500,
+                        borderRadius: tokens.radius.pill,
+                        px: 2,
+                        '&:hover': {
+                          bgcolor: active ? tokens.color.primaryLight : tokens.color.lockedFill,
+                        },
                       }}
                     >
                       {item.label}
@@ -79,7 +78,7 @@ export function AppShell({ userName, children }: { userName: string; children: R
             <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
               <Typography
                 variant="body2"
-                sx={{ color: 'text.secondary', display: { xs: 'none', sm: 'block' } }}
+                sx={{ color: 'text.secondary', display: { xs: 'none', sm: 'block' }, fontWeight: 500 }}
               >
                 {userName}
               </Typography>
@@ -87,6 +86,11 @@ export function AppShell({ userName, children }: { userName: string; children: R
                 variant="outlined"
                 size="small"
                 onClick={() => void signOut({ callbackUrl: '/' })}
+                sx={{
+                  borderColor: tokens.color.border,
+                  color: tokens.color.textPrimary,
+                  fontWeight: 600,
+                }}
               >
                 Sign out
               </Button>

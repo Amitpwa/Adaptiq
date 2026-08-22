@@ -10,7 +10,6 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { AppLink } from '@/ui/components/AppLink';
-import { LearnerIllustration } from '@/ui/graphics/LearnerIllustration';
 import { tokens } from '@/ui/tokens';
 
 export function AuthLayout({
@@ -34,15 +33,13 @@ export function AuthLayout({
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        position: 'relative',
-        overflow: 'hidden',
       }}
     >
       {/* Top Navbar */}
       <Box
         component="header"
         sx={{
-          py: 2.5,
+          py: 2,
           borderBottom: 1,
           borderColor: 'divider',
           bgcolor: 'background.paper',
@@ -54,14 +51,14 @@ export function AuthLayout({
               <Image
                 src="/adaptiq-logo.svg"
                 alt="Adaptiq"
-                width={120}
-                height={32}
+                width={124}
+                height={33}
                 priority
                 style={{ height: 'auto' }}
               />
             </Link>
 
-            <Stack direction="row" spacing={{ xs: 1.5, sm: 3 }} sx={{ alignItems: 'center' }}>
+            <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
               <Button
                 component={Link}
                 href="/"
@@ -72,7 +69,7 @@ export function AuthLayout({
                   '&:hover': { color: 'text.primary' },
                 }}
               >
-                About
+                Overview
               </Button>
               <Button
                 component={Link}
@@ -84,7 +81,7 @@ export function AuthLayout({
                   '&:hover': { color: 'text.primary' },
                 }}
               >
-                Adaptive Loop
+                Adaptive Cycle
               </Button>
 
               {mode === 'register' ? (
@@ -97,7 +94,8 @@ export function AuthLayout({
                     borderColor: tokens.color.border,
                     color: tokens.color.textPrimary,
                     px: 2.5,
-                    transition: 'all 0.15s ease',
+                    fontWeight: 600,
+                    transition: 'all 0.2s ease',
                     '&:hover': {
                       borderColor: tokens.color.primary,
                       transform: 'translateY(-1px)',
@@ -116,7 +114,8 @@ export function AuthLayout({
                     bgcolor: tokens.color.textPrimary,
                     color: '#FFFFFF',
                     px: 2.5,
-                    transition: 'all 0.15s ease',
+                    fontWeight: 600,
+                    transition: 'all 0.2s ease',
                     '&:hover': {
                       bgcolor: tokens.color.primaryDark,
                       transform: 'translateY(-1px)',
@@ -131,7 +130,7 @@ export function AuthLayout({
         </Container>
       </Box>
 
-      {/* Main Split Content Area */}
+      {/* Main Split Content Area with Professional Photography */}
       <Container
         maxWidth="lg"
         sx={{
@@ -145,19 +144,19 @@ export function AuthLayout({
           sx={{
             width: '100%',
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1.05fr 1fr' },
-            gap: { xs: 5, md: 8 },
+            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+            gap: { xs: 5, md: 7 },
             alignItems: 'center',
           }}
         >
-          {/* Left Column: Form & Prompts */}
-          <Stack spacing={3.5} sx={{ maxWidth: 480, width: '100%', mx: { xs: 'auto', md: 0 } }}>
+          {/* Left Column: Form Card */}
+          <Stack spacing={3} sx={{ maxWidth: 480, width: '100%', mx: { xs: 'auto', md: 0 } }}>
             <Stack spacing={1}>
               <Typography
                 variant="h1"
                 component="h1"
                 sx={{
-                  fontSize: { xs: '2rem', md: '2.4rem' },
+                  fontSize: { xs: '2rem', md: '2.5rem' },
                   fontWeight: 600,
                   letterSpacing: '-0.02em',
                 }}
@@ -177,10 +176,10 @@ export function AuthLayout({
                 border: 1,
                 borderColor: 'divider',
                 bgcolor: 'background.paper',
-                boxShadow: '0 4px 20px rgba(11, 31, 58, 0.04)',
+                boxShadow: '0 4px 20px rgba(11, 31, 58, 0.05)',
                 transition: 'box-shadow 0.2s ease',
                 '&:hover': {
-                  boxShadow: '0 8px 30px rgba(11, 31, 58, 0.07)',
+                  boxShadow: '0 8px 30px rgba(11, 31, 58, 0.08)',
                 },
               }}
             >
@@ -192,47 +191,58 @@ export function AuthLayout({
             </Typography>
           </Stack>
 
-          {/* Right Column: Hero Graphic Illustration with Micro-Motion */}
+          {/* Right Column: Editorial Real Photography & Cognitive Telemetry */}
           <Box
             sx={{
               display: { xs: 'none', md: 'flex' },
-              justifyContent: 'center',
+              flexDirection: 'column',
+              gap: 2.5,
               alignItems: 'center',
-              position: 'relative',
-              '& .floating-node-1': {
-                animation: 'floatSlow 4s ease-in-out infinite',
-              },
-              '& .floating-node-2': {
-                animation: 'floatSlow 4s ease-in-out infinite 2s',
-              },
-              '@keyframes floatSlow': {
-                '0%, 100%': { transform: 'translateY(0px)' },
-                '50%': { transform: 'translateY(-8px)' },
-              },
             }}
           >
-            <LearnerIllustration />
+            <Paper
+              elevation={0}
+              sx={{
+                position: 'relative',
+                width: '100%',
+                maxWidth: 480,
+                height: 400,
+                borderRadius: tokens.radius.lg,
+                overflow: 'hidden',
+                border: 1,
+                borderColor: 'divider',
+                boxShadow: '0 12px 36px rgba(11, 31, 58, 0.08)',
+              }}
+            >
+              <Image
+                src="/auth-learner.jpg"
+                alt="Technical engineer learning concepts in Adaptiq"
+                fill
+                style={{ objectFit: 'cover' }}
+                priority
+              />
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(to top, rgba(17, 26, 43, 0.85) 0%, rgba(17, 26, 43, 0) 60%)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'flex-end',
+                  p: 3,
+                }}
+              >
+                <Typography variant="subtitle1" sx={{ color: '#FFFFFF', fontWeight: 600 }}>
+                  Active Retrieval & Zone of Proximal Development
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.8)', mt: 0.5 }}>
+                  Continuous 2PL Item Response Theory & Bayesian Knowledge Tracing calibrate every problem to your ability boundary.
+                </Typography>
+              </Box>
+            </Paper>
           </Box>
         </Box>
       </Container>
-
-      {/* Modern Bottom Arc Accent */}
-      <Box
-        aria-hidden="true"
-        sx={{
-          position: 'absolute',
-          bottom: -120,
-          right: -80,
-          width: 320,
-          height: 320,
-          borderRadius: '50%',
-          bgcolor: tokens.color.textPrimary,
-          opacity: 0.95,
-          zIndex: -1,
-          pointerEvents: 'none',
-          display: { xs: 'none', lg: 'block' },
-        }}
-      />
     </Box>
   );
 }
